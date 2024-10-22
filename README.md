@@ -20,12 +20,12 @@ sudo apt-get install python3-venv
 
 2. Init virtual environment
 ```bash
-python3 -m venv payface-venv
+python3 -m venv dice-catch-venv
 ```
 
 3. Activate the virtual environment
 ```bash
-source payface-venv/bin/activate
+source dice-catch-venv/bin/activate
 ```
 
 4. Install pipenv to manage dependencies
