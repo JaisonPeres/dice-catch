@@ -48,5 +48,5 @@ CSV_FILE_OUTPUT=output.csv
 
 6. Run the script
 ```bash
-pipenv run python script-file-example.py
+pipenv run python main.py
 ```

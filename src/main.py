@@ -67,6 +67,7 @@ def checkMessageOld(date: int):
     return (now - date).seconds > 60
 
 def notify(message: str):
+    print('Notifying:', notify_list)
     for notify in notify_list:
         app.send_message(notify, message)
 
