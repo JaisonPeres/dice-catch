@@ -12,22 +12,22 @@ signals = {
     '🔵': 'blue'
 }
 
+telegram_api_key = os.environ['TELEGRAM_API_KEY']
 telegram_notify_list = os.environ['TELEGRAM_NOTIFY_LIST']
 notify_list = telegram_notify_list.split(',')
-
 value_to_bet = 5
 
 timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
 csv_file_log = f'./log-{timestamp}.csv'
 
-# FUTURE CONFIG TO BET
+# PROCESS TELEGRAM COMMAND
 @app.route('/command ?(.*)')
 def example_command(message: dict, cmd: str):
     chat_from = message['chat']['id']
     msg = "Command Recieved: {}".format(cmd)
     app.send_message(chat_from, msg)
 
-
+# PROCESS TELEGRAM MESSAGE
 @app.route('(?!/).+')
 def receive(message: dict):
     chat_from = message['chat']['id'] if 'id' in message['chat'] else ''
@@ -72,5 +72,5 @@ def notify(message: str):
         app.send_message(notify, message)
 
 if __name__ == '__main__':
-    app.config['api_key'] = os.environ['TELEGRAM_API_KEY']
+    app.config['api_key'] = telegram_api_key
     app.poll(debug=True)
