@@ -3,7 +3,6 @@ import os
 from segurobet import Segurobet
 from datetime import datetime
 from csv_writer import CsvWriter
-import asyncio
 
 seg = Segurobet()
 app = TeleBot(__name__)
@@ -69,7 +68,8 @@ def checkMessageOld(date: int):
 
 def notify(message: str):
     print('Notifying:', notify_list)
-    asyncio.gather(*[app.send_message(notify, message) for notify in notify_list])
+    for notify in notify_list:
+        app.send_message(notify, message)
 
 if __name__ == '__main__':
     app.config['api_key'] = os.environ['TELEGRAM_API_KEY']
