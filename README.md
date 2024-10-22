@@ -7,9 +7,9 @@ This bot is a simple script that receives messages from a Telegram bot and make 
 - Python 3.12 or higher
 - Pipenv
 - Virtualenv
-- AWS S3 Bucket
-- AWS Credentials
-- Database URL
+- Telegram Bot API Key
+- Telegram Chat ID
+- Segurobet Account
 
 ## Run Locally
 
