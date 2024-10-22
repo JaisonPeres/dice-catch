@@ -13,7 +13,7 @@ signals = {
 }
 
 telegram_notify_list = os.environ['TELEGRAM_NOTIFY_LIST']
-notify_list = [telegram_notify_list.split(',')]
+notify_list = telegram_notify_list.split(',')
 
 value_to_bet = 5
 
