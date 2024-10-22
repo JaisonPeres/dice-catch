@@ -41,9 +41,15 @@ pipenv install
 
 5. Adjust variables in the .env file
 ```bash
-BUCKET_NAME=your-bucket-name
-CSV_FILE_INPUT=your-csv-file-name.csv
-CSV_FILE_OUTPUT=output.csv
+PIPENV_VERBOSITY=-1
+
+TELEGRAM_NOTIFY_LIST=12131313,13131313
+
+TELEGRAM_API_KEY=AXAXAXAXAXXAXAX
+
+SEGUROBET_CATCH_URL=https://segurobet.com.br...
+SEGUROBET_CATCH_USERNAME=user
+SEGUROBET_CATCH_PASSWORD=password
 ```
 
 6. Run the script
