@@ -10,6 +10,7 @@ This bot is a simple script that receives messages from a Telegram bot and make 
 - Telegram Bot API Key
 - Telegram Chat ID
 - Segurobet Account
+- Google Chrome Stable
 
 ## Run Locally
 
@@ -54,5 +55,5 @@ SEGUROBET_CATCH_PASSWORD=password
 
 6. Run the script
 ```bash
-pipenv run python main.py
+pipenv run python src/main.py
 ```
