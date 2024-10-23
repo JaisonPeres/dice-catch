@@ -143,7 +143,7 @@ def parseDate(date: str):
 
 def checkMessageOld(date: int):
     date = datetime.fromtimestamp(date)
-    return (init_date - date).seconds > 60
+    return date < init_date
 
 def notify(message: str):
     print('Notifying:', notify_list)
