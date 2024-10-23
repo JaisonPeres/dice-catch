@@ -27,6 +27,9 @@ timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
 
 count_results_file = f'./log-count-results-{timestamp}.csv'
 
+
+init_date = datetime.now()
+
 # PROCESS TELEGRAM COMMAND
 @app.route('/command ?(.*)')
 def example_command(message: dict, cmd: str):
@@ -140,8 +143,7 @@ def parseDate(date: str):
 
 def checkMessageOld(date: int):
     date = datetime.fromtimestamp(date)
-    now = datetime.now()
-    return (now - date).seconds > 60
+    return (init_date - date).seconds > 60
 
 def notify(message: str):
     print('Notifying:', notify_list)
