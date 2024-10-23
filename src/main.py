@@ -2,14 +2,20 @@ from telebot_router import TeleBot
 import os
 from segurobet import Segurobet
 from datetime import datetime
-from csv_writer import CsvWriter
+from csv_file import CsvFile
+import uuid
 
 seg = Segurobet()
 app = TeleBot(__name__)
 
 signals = {
     '🔴': 'red',
-    '🔵': 'blue'
+    '🔵': 'blue',
+}
+
+results = {
+    '✅': 'green',
+    '❌': 'red'
 }
 
 telegram_api_key = os.environ['TELEGRAM_API_KEY']
@@ -18,7 +24,8 @@ notify_list = telegram_notify_list.split(',')
 value_to_bet = 5
 
 timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-csv_file_log = f'./log-{timestamp}.csv'
+
+count_results_file = f'./log-count-results-{timestamp}.csv'
 
 # PROCESS TELEGRAM COMMAND
 @app.route('/command ?(.*)')
@@ -41,22 +48,92 @@ def receive(message: dict):
 
     print(chat_title, f'"{chat_from}"', user_msg, parseDate(date))
 
-    csv_writer = CsvWriter(csv_file_log)
+    base_log = {
+        'chat_title': chat_title,
+        'chat_id': chat_from,
+        'message': user_msg,
+        'date': parseDate(date),
+    }
     
-    for signal, color in signals.items():
-        if signal in user_msg:
-            notify(f'Making bet on {color} with value {value_to_bet}')
-            results = seg.makeBet(color, value_to_bet)
-            csv_writer.add_row({
-                'chat title': chat_title,
-                'chat id': chat_from,
-                'message': user_msg,
-                'color': color,
-                'value': value_to_bet,
-                'date': parseDate(date),
-                'results': results
-            })
+    processMessage(user_msg, base_log)
+
+def processMessage(message: str, base_log: dict):
+    # Check if message is a signal
+    for signal_msg, signal_key in signals.items():
+        if signal_msg in message:
+            base_log['signal'] = signal_key
+            processSignal(signal_key, base_log)
             break
+    # Check if message is a result
+    for result_msg, result_key in results.items():
+        if result_msg in message:
+            base_log['result'] = result_key
+            processResult(result_key, base_log)
+            break
+
+def processSignal(signal: str, base_log: dict):
+    signal_file = CsvFile(f'./log-signal-{timestamp}.csv')
+    print('Processing signal:', signal)
+    notify(f'Making bet on {signal} with value {value_to_bet}')
+    seg.makeBet(signal, value_to_bet)
+    signal_file.add_row({**base_log})
+    pass
+
+def processResult(result: str, base_log: dict):
+    result_file = CsvFile(f'./log-result-{timestamp}.csv')
+    print('Processing result:', result)
+    result_file.add_row({**base_log})
+    countResult(result)
+    pass
+
+def countResult(result_key: str):
+    count_result_file = CsvFile(count_results_file)
+
+    result_id = uuid.uuid4()
+    result_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    total_red = 0
+    total_green = 0
+    icon = '🟩' if result_key == 'green' else '🟥'
+
+    if os.path.isfile(count_results_file):
+        df = count_result_file.load()
+        if 'result' not in df.columns:
+            print('Creating result column')
+            df['result'] = ''
+            if result_key == 'red':
+                total_red = 1
+            elif result_key == 'green':
+                total_green = 1
+            count_result_file.add_row({
+                'icon': icon,
+                'id': result_id,
+                'date': result_date,
+                'result': result_key,
+                'total_red': total_red,
+                'total_green': total_green
+            })
+            return
+
+        total_red = len(df[df['result'] == 'red'])
+        total_green = len(df[df['result'] == 'green'])
+    
+    if result_key == 'red':
+        total_red += 1
+    elif result_key == 'green':
+        total_green += 1
+
+    print('Total red:', total_red)
+    print('Total green:', total_green)
+
+    count_result_file.add_row({
+        'icon': icon,
+        'id': result_id,
+        'date': result_date,
+        'result': result_key,
+        'total_red': total_red,
+        'total_green': total_green
+    })
+
 
 def parseDate(date: str):
     return datetime.fromtimestamp(date).strftime('%Y-%m-%d %H:%M:%S')

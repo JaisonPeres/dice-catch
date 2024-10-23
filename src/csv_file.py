@@ -1,7 +1,7 @@
 import pandas as pd # type: ignore
 import os
 
-class CsvWriter:
+class CsvFile:
     def __init__(self, filename):
         self.filename = filename
         
@@ -12,7 +12,12 @@ class CsvWriter:
     def add_row(self, row):
         if os.path.getsize(self.filename) == 0:
             df = pd.DataFrame([row])
-            df.to_csv(self.filename, mode='w', sep=';', header=True, index=False)
+            df.to_csv(self.filename, mode='w', sep=',', header=True, index=False)
         else:
             df = pd.DataFrame([row])
             df.to_csv(self.filename, mode='a', header=False, index=False)
+
+    def load(self):
+        if os.path.getsize(self.filename) == 0:
+            return pd.DataFrame()
+        return pd.read_csv(self.filename, sep=',')
