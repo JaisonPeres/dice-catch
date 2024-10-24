@@ -79,7 +79,7 @@ def processSignal(signal: str, base_log: dict):
     print('Processing signal:', signal)
     notify(f'Making bet on {signal} with value {value_to_bet}')
     result = seg.makeBet(signal, value_to_bet)
-    result = str(result).replace(',', '-')
+    result = str(result).replace(',', '-').replace('[', '').replace(']', '').replace(' ', '')
     signal_file.add_row({**base_log, result: result})
     pass
 
