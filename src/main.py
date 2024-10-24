@@ -29,6 +29,7 @@ count_results_file = f'./log-count-results-{timestamp}.csv'
 
 
 init_date = datetime.now()
+init_date_str = init_date.strftime('%Y-%m-%d %H:%M:%S')
 
 # PROCESS TELEGRAM COMMAND
 @app.route('/command ?(.*)')
@@ -46,7 +47,6 @@ def receive(message: dict):
     user_msg = message['text'] if 'text' in message else ''
 
     if checkMessageOld(date):
-        print(f'Message is old: {date}')
         return
 
     print(chat_title, f'"{chat_from}"', user_msg, parseDate(date))
@@ -78,8 +78,9 @@ def processSignal(signal: str, base_log: dict):
     signal_file = CsvFile(f'./log-signal-{timestamp}.csv')
     print('Processing signal:', signal)
     notify(f'Making bet on {signal} with value {value_to_bet}')
-    seg.makeBet(signal, value_to_bet)
-    signal_file.add_row({**base_log})
+    result = seg.makeBet(signal, value_to_bet)
+    result = str(result).replace(',', '-')
+    signal_file.add_row({**base_log, result: result})
     pass
 
 def processResult(result: str, base_log: dict):
@@ -101,7 +102,6 @@ def countResult(result_key: str):
     if os.path.isfile(count_results_file):
         df = count_result_file.load()
         if 'result' not in df.columns:
-            print('Creating result column')
             df['result'] = ''
             if result_key == 'red':
                 total_red = 1
@@ -112,9 +112,10 @@ def countResult(result_key: str):
                 'id': result_id,
                 'date': result_date,
                 'result': result_key,
-                'total_red': total_red,
-                'total_green': total_green
+                'total_green': total_green,
+                'total_red': total_red
             })
+            notify(f'✅ {total_green} ❌ {total_red}')
             return
 
         total_red = len(df[df['result'] == 'red'])
@@ -125,8 +126,10 @@ def countResult(result_key: str):
     elif result_key == 'green':
         total_green += 1
 
-    print('Total red:', total_red)
     print('Total green:', total_green)
+    print('Total red:', total_red)
+
+    notify(f'✅ {total_green} ❌ {total_red}')
 
     count_result_file.add_row({
         'icon': icon,
@@ -146,10 +149,10 @@ def checkMessageOld(date: int):
     return date < init_date
 
 def notify(message: str):
-    print('Notifying:', notify_list)
     for notify in notify_list:
         app.send_message(notify, message)
 
 if __name__ == '__main__':
+    print(f'Starting bot at: {init_date_str}')
     app.config['api_key'] = telegram_api_key
     app.poll(debug=True)

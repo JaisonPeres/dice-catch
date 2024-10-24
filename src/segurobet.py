@@ -14,6 +14,9 @@ IFRAME_3_PATH = '/html/body/div[5]/div[2]/iframe'
 RESULTS_PATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[1]/div/div/div'
 INACTIVITY_MESSAGE_PATH = 'div[data-role="inactivity-message-clickable"]'
 
+BLUE_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[1]/div[3]'
+RED_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[3]/div[3]'
+
 segurobet_catch_url = os.environ['SEGUROBET_CATCH_URL']
 segurobet_catch_username = os.environ['SEGUROBET_CATCH_USERNAME']
 segurobet_catch_password = os.environ['SEGUROBET_CATCH_PASSWORD']
@@ -67,20 +70,28 @@ class Segurobet:
     def makeBet(self, color: str, value: int):
         if not self.frames_loaded:
             self.updateResults()
-        if color == 'red':
+        if color == 'blue':
+            # MAKE BET BLU
+            blue_po = self.driver.find_element(By.XPATH, BLUE_XPATH)
+            if blue_po is None:
+                print('blue_po not found')
+                return
+            blue_po.click()
+            print('make bet blue 🔵', value, blue_po.text )
+        elif color == 'red':
             # MAKE BET RED
-            # self.driver.find_element(By.CSS_SELECTOR, 'div[data-role="red"]').click()
-            print('make bet red', value)
-        elif color == 'blue':
-            # MAKE BET BLUE
-            # self.driver.find_element(By.CSS_SELECTOR, 'div[data-role="blue"]').click()
-            print('make bet blue', value)
+            red_po = self.driver.find_element(By.XPATH, RED_XPATH)
+            if red_po is None:
+                print('red_po not found')
+                return
+            red_po.click()
+            print('make bet red 🔴', value, red_po.text)
         else:
             print('invalid color')
             return
         return self.updateResults()
 
-    def updateResults(self):
+    def updateResults(self) -> list:
         results = []
         check_results = []
         while len(self.driver.find_elements(By.XPATH, RESULTS_PATH)) == 0:
@@ -89,10 +100,7 @@ class Segurobet:
 
         self.resolveInactivityMessage()
         if results != check_results:
-            hora_atual = datetime.now().strftime("%H:%M:%S")
-            print(hora_atual)
             check_results = results
-            print(results)
             return results
 
     def login(self):
