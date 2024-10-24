@@ -85,7 +85,6 @@ def processSignal(signal: str, base_log: dict):
 
 def processResult(result: str, base_log: dict):
     result_file = CsvFile(f'./log-result-{timestamp}.csv')
-    print('[BOT] Processing result:', result)
     result_file.add_row({**base_log})
     countResult(result)
     pass
