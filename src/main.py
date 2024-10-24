@@ -49,7 +49,7 @@ def receive(message: dict):
     if checkMessageOld(date):
         return
 
-    print(chat_title, f'"{chat_from}"', user_msg, parseDate(date))
+    print('[BOT] ', chat_title, f'"{chat_from}"', user_msg, parseDate(date))
 
     base_log = {
         'chat_title': chat_title,
@@ -76,7 +76,7 @@ def processMessage(message: str, base_log: dict):
 
 def processSignal(signal: str, base_log: dict):
     signal_file = CsvFile(f'./log-signal-{timestamp}.csv')
-    print('Processing signal:', signal)
+    print('[BOT] Processing signal:', signal)
     notify(f'Making bet on {signal} with value {value_to_bet}')
     result = seg.makeBet(signal, value_to_bet)
     result = str(result).replace(',', '-').replace('[', '').replace(']', '').replace(' ', '')
@@ -85,7 +85,7 @@ def processSignal(signal: str, base_log: dict):
 
 def processResult(result: str, base_log: dict):
     result_file = CsvFile(f'./log-result-{timestamp}.csv')
-    print('Processing result:', result)
+    print('[BOT] Processing result:', result)
     result_file.add_row({**base_log})
     countResult(result)
     pass
@@ -126,8 +126,8 @@ def countResult(result_key: str):
     elif result_key == 'green':
         total_green += 1
 
-    print('Total green:', total_green)
-    print('Total red:', total_red)
+    print('[BOT] Total green:', total_green)
+    print('[BOT] Total red:', total_red)
 
     notify(f'✅ {total_green} ❌ {total_red}')
 
@@ -153,6 +153,6 @@ def notify(message: str):
         app.send_message(notify, message)
 
 if __name__ == '__main__':
-    print(f'Starting bot at: {init_date_str}')
+    print(f'[BOT] Starting at: {init_date_str}')
     app.config['api_key'] = telegram_api_key
     app.poll(debug=True)

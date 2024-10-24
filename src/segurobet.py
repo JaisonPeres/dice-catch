@@ -57,7 +57,7 @@ class Segurobet:
             self.driver.find_element(By.CSS_SELECTOR, INACTIVITY_MESSAGE_PATH).click()
 
     def loadFrames(self):
-        print('loading frames')
+        print('[WEBDRIVER] loading frames')
         if not self.logged_session:
             self.login()
         handles_window = self.driver.window_handles[0]
@@ -74,20 +74,20 @@ class Segurobet:
             # MAKE BET BLU
             blue_po = self.driver.find_element(By.XPATH, BLUE_XPATH)
             if blue_po is None:
-                print('blue_po not found')
+                print('[WEBDRIVER] blue_po not found')
                 return
             blue_po.click()
-            print('make bet blue 🔵', value, blue_po.text )
+            print('[WEBDRIVER] make bet blue 🔵', value, blue_po.text )
         elif color == 'red':
             # MAKE BET RED
             red_po = self.driver.find_element(By.XPATH, RED_XPATH)
             if red_po is None:
-                print('red_po not found')
+                print('[WEBDRIVER] red_po not found')
                 return
             red_po.click()
-            print('make bet red 🔴', value, red_po.text)
+            print('[WEBDRIVER] make bet red 🔴', value, red_po.text)
         else:
-            print('invalid color')
+            print('[WEBDRIVER] invalid color')
             return
         return self.updateResults()
 
@@ -105,9 +105,9 @@ class Segurobet:
 
     def login(self):
         if self.logged_session:
-            print('already logged')
+            print('[WEBDRIVER] already logged')
             return
-        print('login in progress...')
+        print('[WEBDRIVER] login in progress...')
         self.driver.get(segurobet_catch_url)
 
         while len(self.driver.find_elements(By.ID, 'username')) == 0:
@@ -124,5 +124,5 @@ class Segurobet:
                 pass
 
         self.logged_session = True
-        print('login success!')
+        print('[WEBDRIVER] login success!')
         time.sleep(20)
