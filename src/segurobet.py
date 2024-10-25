@@ -2,6 +2,7 @@ from seleniumbase import Driver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 from datetime import datetime
 import time 
 import os
@@ -26,11 +27,20 @@ segurobet_catch_url = os.environ['SEGUROBET_CATCH_URL']
 segurobet_catch_username = os.environ['SEGUROBET_CATCH_USERNAME']
 segurobet_catch_password = os.environ['SEGUROBET_CATCH_PASSWORD']
 
-refresh_timer_minutes = 60 * 9 
+env_minutes = os.environ.get('REFRESH_TIMER_MINUTES')
+refresh_timer_minutes = 60 * int(env_minutes) if env_minutes is not None else 5
+
+IS_SANDBOX = os.environ.get('SANDBOX') == 'true'
+
+RED_COLOR = 'red'
+BLUE_COLOR = 'blue'
 
 class Segurobet:
 
     def __init__(self):
+        pass
+
+    def init(self):
         self.driver = Driver(uc=True, headless=False)
         self.driver.get(segurobet_catch_url)
         self.logged_session = False
@@ -63,7 +73,7 @@ class Segurobet:
             iframe = self.driver.find_element(By.XPATH, iframe_xpath)
             self.driver.switch_to.frame(iframe)
         except Exception as error:
-            logger.error(f'error switching to iframe {error}')
+            logger.error(f'error switching to iframe', error)
             pass
 
 
@@ -80,19 +90,19 @@ class Segurobet:
             self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH).click()
             time.sleep(2)
             self.loadFrames()
-        except:
-            logger.error('error closing banner')
+        except NoSuchElementException as error:
+            logger.error('error closing banner', error.msg)
             pass
     
     def closePrivacyOptIn(self):
         try:
             self.driver.find_element(By.XPATH, PRIVACY_OPT_IN_BUTTON_PATH).click()
-        except:
-            logger.error('error closing privacy opt in')
+        except NoSuchElementException as error:
+            logger.error('error closing privacy opt in', error.msg)
             pass
 
     def loadFrames(self):
-        logger.info('loading frames')
+        logger.info('loading frames...')
         if not self.logged_session:
             self.login()
         handles_window = self.driver.window_handles[0]
@@ -101,6 +111,7 @@ class Segurobet:
         self.switchToIframe(IFRAME_2_PATH)
         self.switchToIframe(IFRAME_3_PATH)
         self.frames_loaded = True
+        logger.info('frames loaded!')
 
     def refreshOnTimer(self):
         initial_time = datetime.now()
@@ -111,30 +122,34 @@ class Segurobet:
                 self.driver.refresh()
                 self.loadFrames()
                 initial_time = datetime.now()
-    
-    def makeBet(self, color: str, value: int):
+
+    def makeBetHandler(self, color: str, path: str, value: int):
         try:
-            self.closeBanner()
-            if not self.frames_loaded:
-                self.updateResults()
-            if color == 'blue':
-                blue_po = self.driver.find_element(By.XPATH, BLUE_XPATH)
-                if blue_po is not None and blue_po.is_displayed() and blue_po.is_enabled():
-                    blue_po.click()
-                else:
-                    logger.error('blue_po not found')
-            elif color == 'red':
-                red_po = self.driver.find_element(By.XPATH, RED_XPATH)
-                if red_po is not None and blue_po.is_displayed() and blue_po.is_enabled():
-                    red_po.click()
-                else:
-                    logger.error('red_po not found')
+            color_bet_button = self.driver.find_element(By.XPATH, path)
+            if color_bet_button is not None and color_bet_button.is_displayed() and color_bet_button.is_enabled():
+                if IS_SANDBOX:
+                    logger.warning(f'SANDBOX MODE - Making bet on {color} with value {value}')
+                    return
+                logger.info(f'Making bet on {color} with value {value}')
+                color_bet_button.click()
             else:
-                logger.error('invalid color')
-            return self.updateResults()
-        except:
-            logger.error(f'error making bet {color}')
-            return
+                logger.error(f'{color} button not found')
+        except NoSuchElementException as error:
+            logger.error(f'error making bet {color}', error.msg)
+            pass
+    
+    def bet(self, color: str, value: int):
+        self.closeBanner()
+        if not self.frames_loaded:
+            self.updateResults()
+    
+        if color == BLUE_COLOR:
+            self.makeBetHandler(color, BLUE_XPATH, value)
+
+        if color == RED_COLOR:
+            self.makeBetHandler(color, RED_XPATH, value)
+
+        return self.updateResults()
 
     def updateResults(self) -> list:
         results = []
@@ -152,7 +167,7 @@ class Segurobet:
         if self.logged_session:
             logger.warning('already logged')
             return
-        logger.info('logging in...')
+        logger.info('login in progress...')
         self.driver.get(segurobet_catch_url)
 
         while len(self.driver.find_elements(By.ID, 'username')) == 0:
@@ -169,6 +184,6 @@ class Segurobet:
                 pass
 
         self.logged_session = True
-        logger.success('login success!')
+        logger.info('login success!')
         self.closePrivacyOptIn()
         time.sleep(5)

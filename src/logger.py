@@ -1,3 +1,6 @@
+import pyfiglet
+from rich import print as rprint
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -14,14 +17,23 @@ class Logger:
         self.context = context
         pass
 
-    def info(self, message):
-        print(f'{bcolors.OKBLUE}[{self.context}] {message}{bcolors.ENDC}')
+    def info(self, message: str):
+        print(f'{bcolors.HEADER}[{self.context}] {bcolors.ENDC}{message}{bcolors.ENDC}')
 
-    def error(self, message):
-        print(f'{bcolors.FAIL}[{self.context}] {message}{bcolors.ENDC}')
+    def error(self, message: str, details):
+        print(f'{bcolors.HEADER}[{self.context}] {bcolors.FAIL}ERROR: {message}{bcolors.ENDC}', details)
 
-    def warning(self, message):
-        print(f'{bcolors.WARNING}[{self.context}] {message}{bcolors.ENDC}')
+    def warning(self, message: str):
+        print(f'{bcolors.HEADER}[{self.context}] {bcolors.WARNING}WARNING: {message}{bcolors.ENDC}')
     
-    def success(self, message):
-        print(f'{bcolors.OKGREEN}[{self.context}] {message}{bcolors.ENDC}')
+    def success(self, message: str):
+        print(f'{bcolors.HEADER}[{self.context}] {bcolors.OKGREEN}SUCCESS: {message}{bcolors.ENDC}')
+    
+    def title(self, message: str):
+        rprint(pyfiglet.figlet_format(message, font='slant'))
+    
+    def subtitle(self, message: str):
+        print(f'{bcolors.OKGREEN}{bcolors.BOLD}{message}{bcolors.ENDC}')
+
+    def clear(self):
+        print('\033[H\033[J')

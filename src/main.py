@@ -78,7 +78,7 @@ def processSignal(signal: str, base_log: dict):
     signal_file = CsvFile(f'./log-signal-{timestamp}.csv')
     logger.info(f'Processing signal: {signal}')
     notify(f'Making bet on {signal} with value {value_to_bet}')
-    result = seg.makeBet(signal, value_to_bet)
+    result = seg.bet(signal, value_to_bet)
     result = str(result).replace(',', '-').replace('[', '').replace(']', '').replace(' ', '').replace("'", "")
     signal_file.add_row({**base_log, result: result})
     pass
@@ -152,6 +152,10 @@ def notify(message: str):
         app.send_message(notify, message)
 
 if __name__ == '__main__':
+    logger.clear()
+    logger.title('Dice Catch')
+    logger.subtitle('Bot for catching dice signals\n\n')
     logger.info(f'Starting at: {init_date_str}')
+    seg.init()
     app.config['api_key'] = telegram_api_key
     app.poll(debug=True)

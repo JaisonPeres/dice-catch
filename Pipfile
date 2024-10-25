@@ -9,6 +9,8 @@ seleniumbase = "*"
 selenium = "*"
 telebot = "*"
 pandas = "*"
+pyfiglet = "*"
+rich = "*"
 
 [dev-packages]
 
