@@ -44,6 +44,7 @@ class Segurobet:
 
     def init(self):
         self.driver = Driver(uc=True, headless=False)
+        self.driver.maximize_window()
         self.driver.get(segurobet_catch_url)
         self.logged_session = False
         self.frames_loaded = False
@@ -95,20 +96,25 @@ class Segurobet:
     def closeBanner(self):
         logger.info('closing banner...')
         try:
-            # self.driver.switch_to.default_content()
-            errors = [NoSuchElementException, ElementNotInteractableException]
-            wait = WebDriverWait(self.driver, timeout=2, poll_frequency=.2, ignored_exceptions=errors)
-            # close_banner_button  = self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH)
-            # wait.until(lambda d : close_banner_button.send_keys("Displayed") or True)
-            # close_banner_button.click()
-            banner = self.driver.find_element(By.XPATH, BANNER_PATH)
+            self.driver.switch_to.default_content()
+            # errors = [NoSuchElementException, ElementNotInteractableException]
+            # wait = WebDriverWait(self.driver, timeout=2, poll_frequency=.2, ignored_exceptions=errors)
+            # # close_banner_button  = self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH)
+            # # wait.until(lambda d : close_banner_button.send_keys("Displayed") or True)
+            # # close_banner_button.click()
+            # banner = self.driver.find_element(By.XPATH, BANNER_PATH)
 
-            wait.until(lambda d : banner.is_displayed())
+            # wait.until(lambda d : banner.is_displayed())
 
-            banner.send_keys("Displayed")
-            if banner.get_property("value") == "Displayed":
-                banner_close = self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH)
+            # banner.send_keys("Displayed")
+            # if banner.get_property("value") == "Displayed":
+            # errors = [NoSuchElementException, ElementNotInteractableException]
+            # wait = WebDriverWait(self.driver, timeout=2, poll_frequency=.2, ignored_exceptions=errors)
+            banner_close = self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH)
+            if banner_close is not None and banner_close.is_displayed() and banner_close.is_enabled():
                 banner_close.click()
+
+            self.loadFrames()
         except NoSuchElementException as error:
             logger.error('error closing banner', error.msg)
             pass
@@ -166,6 +172,7 @@ class Segurobet:
             pass
     
     def bet(self, color: str, value: int):
+        self.closeBanner()
         if not self.frames_loaded:
             self.updateResults()
     

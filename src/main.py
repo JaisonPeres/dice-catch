@@ -5,6 +5,7 @@ from datetime import datetime
 from csv_file import CsvFile
 import uuid
 from logger import Logger
+import sys
 
 seg = Segurobet()
 app = TeleBot(__name__)
@@ -33,7 +34,7 @@ count_results_file = f'./log-count-results-{timestamp}.csv'
 init_date = datetime.now()
 init_date_str = init_date.strftime('%Y-%m-%d %H:%M:%S')
 
-IS_SANDBOX = os.environ.get('SANDBOX') == 'true'
+IS_SANDBOX = True
 
 # PROCESS TELEGRAM COMMAND
 @app.route('/command ?(.*)')
@@ -153,12 +154,24 @@ def notify(message: str):
     for notify in notify_list:
         app.send_message(notify, message)
 
+def exit_handler():
+    logger.warning('Exiting...')
+    sys.exit(0)
+
 if __name__ == '__main__':
+    user_input = input("Init bot with SANDBOX mode? (y/n): ")
+    if user_input.lower() == "y":
+        IS_SANDBOX = True
+    else:
+        IS_SANDBOX = False
+
     logger.clear()
     logger.title('Dice Catch')
     logger.subtitle('Bot for catching dice signals\n')
     if IS_SANDBOX:
-        logger.warning('SANDBOX MODE')
+        logger.warning('🕹️  SANDBOX MODE')
+    else:
+        logger.warning('💸 REAL MODE')
     logger.info(f'Starting at: {init_date_str}')
     seg.init()
     logger.success('Bot listening...')
