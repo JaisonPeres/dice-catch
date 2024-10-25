@@ -4,20 +4,12 @@ from segurobet import Segurobet
 from datetime import datetime
 from csv_file import CsvFile
 import uuid
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+from logger import Logger
 
 seg = Segurobet()
 app = TeleBot(__name__)
+
+logger = Logger('Bot')
 
 signals = {
     '🔴': 'red',
@@ -60,7 +52,7 @@ def receive(message: dict):
     if checkMessageOld(date):
         return
 
-    print(bcolors.OKCYAN + '[BOT] ', chat_title, f'"{chat_from}"', user_msg, parseDate(date))
+    logger.info(f'{chat_title} "{chat_from}" {user_msg} {parseDate(date)}')
 
     base_log = {
         'chat_title': chat_title,
@@ -87,7 +79,7 @@ def processMessage(message: str, base_log: dict):
 
 def processSignal(signal: str, base_log: dict):
     signal_file = CsvFile(f'./log-signal-{timestamp}.csv')
-    print(bcolors.OKCYAN +'[BOT] Processing signal:', signal)
+    logger.info(f'Processing signal: {signal}')
     notify(f'Making bet on {signal} with value {value_to_bet}')
     result = seg.makeBet(signal, value_to_bet)
     result = str(result).replace(',', '-').replace('[', '').replace(']', '').replace(' ', '').replace("'", "")
@@ -136,8 +128,8 @@ def countResult(result_key: str):
     elif result_key == 'green':
         total_green += 1
 
-    print(bcolors.OKCYAN + '[BOT] Total green:', total_green)
-    print(bcolors.OKCYAN + '[BOT] Total red:', total_red)
+    logger.info(f'Total green: {total_green}')
+    logger.info(f'Total red: {total_red}')
 
     notify(f'✅ {total_green} ❌ {total_red}')
 
@@ -163,6 +155,6 @@ def notify(message: str):
         app.send_message(notify, message)
 
 if __name__ == '__main__':
-    print(bcolors.OKCYAN + f'[BOT] Starting at: {init_date_str}')
+    logger.info(f'Starting at: {init_date_str}')
     app.config['api_key'] = telegram_api_key
     app.poll(debug=True)
