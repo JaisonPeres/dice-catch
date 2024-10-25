@@ -49,12 +49,25 @@ class Segurobet:
         self.logged_session = False
         self.frames_loaded = False
         self.login()
+        self.setBannerOutOfPage()
         loadFramesThread = threading.Thread(name='loadFramesThread', target=self.loadFrames)
         refreshThread = threading.Thread(name='refreshThread', target=self.refreshOnTimer)
         loadFramesThread.start()
         refreshThread.start()
         self.updateResults()
         pass
+    
+    def setBannerOutOfPage(self):
+        try:
+            # create a style tag with class .hb-modal-wrp and set translate to -100%
+            self.driver.execute_script('''
+                var style = document.createElement('style');
+                style.innerHTML = '.hb-modal-wrp { transform: translate(1000px); }';
+                document.head.appendChild(style);
+            ''')
+        except NoSuchElementException as error:
+            logger.error('error setting banner out of page', error.msg)
+            pass
 
     def switchToCasinoIframe(self):
         try:
@@ -137,7 +150,7 @@ class Segurobet:
                 logger.info(f'Making bet on {color} with value {value}')
                 self.driver.implicitly_wait(10)
                 color_bet_button.click()
-                # ActionChains(self.driver).move_to_element(color_bet_button).click(color_bet_button).perform()
+                # ActionChains(self.driver).move_to_element(color_bet_button).click(color_bet_button).perform() 
             else:
                 logger.error(f'{color} button not found')
         except NoSuchElementException as error:
@@ -145,7 +158,7 @@ class Segurobet:
             pass
     
     def bet(self, color: str, value: int):
-        self.closeBanner()
+        # self.closeBanner()
         if not self.frames_loaded:
             self.updateResults()
     
