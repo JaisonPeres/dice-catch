@@ -173,7 +173,7 @@ if __name__ == '__main__':
     else:
         logger.warning('💸 REAL MODE')
     logger.info(f'Starting at: {init_date_str}')
-    seg.init()
+    seg.init(IS_SANDBOX)
     logger.success('Bot listening...')
     app.config['api_key'] = telegram_api_key
     app.poll(debug=True)

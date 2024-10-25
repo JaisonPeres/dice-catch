@@ -32,17 +32,17 @@ segurobet_catch_password = os.environ['SEGUROBET_CATCH_PASSWORD']
 env_minutes = os.environ.get('REFRESH_TIMER_MINUTES')
 refresh_timer_minutes = 60 * int(env_minutes) if env_minutes is not None else 5
 
-IS_SANDBOX = os.environ.get('SANDBOX') == 'true'
-
 RED_COLOR = 'red'
 BLUE_COLOR = 'blue'
 
 class Segurobet:
 
     def __init__(self):
+        self.sandbox = True
         pass
 
-    def init(self):
+    def init(self, sandbox: bool):
+        self.sandbox = sandbox
         self.driver = Driver(uc=True, headless=False)
         self.driver.maximize_window()
         self.driver.get(segurobet_catch_url)
@@ -155,11 +155,11 @@ class Segurobet:
 
     def makeBetHandler(self, color: str, path: str, value: int):
         try:
-            # color_bet_button = self.driver.find_element(By.XPATH, path)
-            wait = WebDriverWait(self.driver, 10)
-            color_bet_button = wait.until(EC.element_to_be_clickable((By.XPATH, path)))
+            color_bet_button = self.driver.find_element(By.XPATH, path)
+            # wait = WebDriverWait(self.driver, 10)
+            # color_bet_button = wait.until(EC.element_to_be_clickable((By.XPATH, path)))
             if color_bet_button is not None and color_bet_button.is_displayed() and color_bet_button.is_enabled():
-                if IS_SANDBOX:
+                if self.sandbox:
                     logger.warning(f'SANDBOX MODE - Making bet on {color} with value {value}')
                     return
                 logger.info(f'Making bet on {color} with value {value}')
