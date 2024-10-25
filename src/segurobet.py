@@ -1,6 +1,7 @@
 from seleniumbase import Driver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 from datetime import datetime
@@ -19,6 +20,7 @@ IFRAME_3_PATH = '/html/body/div[5]/div[2]/iframe'
 RESULTS_PATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[1]/div/div/div'
 INACTIVITY_MESSAGE_PATH = 'div[data-role="inactivity-message-clickable"]'
 PRIVACY_OPT_IN_BUTTON_PATH = '/html/body/div[5]/div/div[2]/button[3]'
+BANNER_PATH = '/html/body/div[1]/div/div/div'
 BANNER_CLOSE_BUTTON_PATH = '/html/body/div[1]/div/div/div/div[3]/button'
 BLUE_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[1]/div[3]'
 RED_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[3]/div[3]'
@@ -46,8 +48,10 @@ class Segurobet:
         self.logged_session = False
         self.frames_loaded = False
         self.login()
+        # closeBannerThread = threading.Thread(name='closeBanner', target=self.closeBanner)
         loadFramesThread = threading.Thread(name='loadFramesThread', target=self.loadFrames)
         refreshThread = threading.Thread(name='refreshThread', target=self.refreshOnTimer)
+        # closeBannerThread.start()
         loadFramesThread.start()
         refreshThread.start()
         self.updateResults()
@@ -89,11 +93,22 @@ class Segurobet:
     #         pass
     
     def closeBanner(self):
+        logger.info('closing banner...')
         try:
-            self.driver.switch_to.default_content()
-            self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH).click()
-            time.sleep(2)
-            self.loadFrames()
+            # self.driver.switch_to.default_content()
+            errors = [NoSuchElementException, ElementNotInteractableException]
+            wait = WebDriverWait(self.driver, timeout=2, poll_frequency=.2, ignored_exceptions=errors)
+            # close_banner_button  = self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH)
+            # wait.until(lambda d : close_banner_button.send_keys("Displayed") or True)
+            # close_banner_button.click()
+            banner = self.driver.find_element(By.XPATH, BANNER_PATH)
+
+            wait.until(lambda d : banner.is_displayed())
+
+            banner.send_keys("Displayed")
+            if banner.get_property("value") == "Displayed":
+                banner_close = self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH)
+                banner_close.click()
         except NoSuchElementException as error:
             logger.error('error closing banner', error.msg)
             pass
@@ -106,18 +121,23 @@ class Segurobet:
             pass
 
     def loadFrames(self):
-        logger.info('loading frames...')
-        if not self.logged_session:
-            self.login()
-        handles_window = self.driver.window_handles[0]
-        self.driver.switch_to.window(handles_window)
-        self.switchToCasinoIframe()
-        self.switchToIframe(IFRAME_2_PATH)
-        self.switchToIframe(IFRAME_3_PATH)
-        self.frames_loaded = True
-        logger.info('frames loaded!')
+        try:
+            logger.info('loading game frames...')
+            if not self.logged_session:
+                self.login()
+            handles_window = self.driver.window_handles[0]
+            self.driver.switch_to.window(handles_window)
+            self.switchToCasinoIframe()
+            self.switchToIframe(IFRAME_2_PATH)
+            self.switchToIframe(IFRAME_3_PATH)
+            self.frames_loaded = True
+            logger.success('game frames loaded!')
+        except Exception as error:
+            logger.error('error loading game frames', error)
+            pass
 
     def refreshOnTimer(self):
+        logger.info(f'refreshing on timer every {refresh_timer_minutes / 60} minutes')
         initial_time = datetime.now()
         while True:
             current_time = datetime.now()
@@ -129,7 +149,9 @@ class Segurobet:
 
     def makeBetHandler(self, color: str, path: str, value: int):
         try:
-            color_bet_button = self.driver.find_element(By.XPATH, path)
+            # color_bet_button = self.driver.find_element(By.XPATH, path)
+            wait = WebDriverWait(self.driver, 10)
+            color_bet_button = wait.until(EC.element_to_be_clickable((By.XPATH, path)))
             if color_bet_button is not None and color_bet_button.is_displayed() and color_bet_button.is_enabled():
                 if IS_SANDBOX:
                     logger.warning(f'SANDBOX MODE - Making bet on {color} with value {value}')
@@ -144,7 +166,6 @@ class Segurobet:
             pass
     
     def bet(self, color: str, value: int):
-        self.closeBanner()
         if not self.frames_loaded:
             self.updateResults()
     
@@ -195,7 +216,7 @@ class Segurobet:
                     pass
 
             self.logged_session = True
-            logger.info('login success!')
+            logger.success('login success!')
             self.closePrivacyOptIn()
             time.sleep(5)
         except Exception as error:

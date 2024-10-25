@@ -18,16 +18,16 @@ class Logger:
         pass
 
     def info(self, message: str):
-        print(f'{bcolors.HEADER}[{self.context}] {bcolors.ENDC}{message}{bcolors.ENDC}')
+        print(f'{bcolors.OKCYAN}INFO: {bcolors.HEADER}[{self.context}] {bcolors.ENDC}{message}{bcolors.ENDC}')
 
     def error(self, message: str, details):
-        print(f'{bcolors.HEADER}[{self.context}] {bcolors.FAIL}ERROR: {message}{bcolors.ENDC}', details)
+        print(f'{bcolors.FAIL}ERROR: {bcolors.HEADER}[{self.context}] {bcolors.ENDC}{message}{bcolors.ENDC}', details)
 
     def warning(self, message: str):
-        print(f'{bcolors.HEADER}[{self.context}] {bcolors.WARNING}WARNING: {message}{bcolors.ENDC}')
+        print(f'{bcolors.WARNING}WARNING: {bcolors.HEADER}[{self.context}] {bcolors.ENDC}{message}{bcolors.ENDC}')
     
     def success(self, message: str):
-        print(f'{bcolors.HEADER}[{self.context}] {bcolors.OKGREEN}SUCCESS: {message}{bcolors.ENDC}')
+        print(f'{bcolors.OKGREEN}SUCCESS: {bcolors.HEADER}[{self.context}] {bcolors.ENDC}{message}{bcolors.ENDC}')
     
     def title(self, message: str):
         rprint(pyfiglet.figlet_format(message, font='slant'))
