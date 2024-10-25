@@ -14,11 +14,8 @@ IFRAME_2_PATH = '/html/body/div[2]/div/div[1]/div/iframe'
 IFRAME_3_PATH = '/html/body/div[5]/div[2]/iframe'
 RESULTS_PATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[1]/div/div/div'
 INACTIVITY_MESSAGE_PATH = 'div[data-role="inactivity-message-clickable"]'
-
 PRIVACY_OPT_IN_BUTTON_PATH = '/html/body/div[5]/div/div[2]/button[3]'
-
 BANNER_CLOSE_BUTTON_PATH = '/html/body/div[1]/div/div/div/div[3]/button'
-
 BLUE_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[1]/div[3]'
 RED_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[3]/div[3]'
 
@@ -119,14 +116,14 @@ class Segurobet:
                 self.updateResults()
             if color == 'blue':
                 blue_po = self.driver.find_element(By.XPATH, BLUE_XPATH)
-                if blue_po is None:
+                if blue_po is None and blue_po.isDisplayed() and blue_po.isEnabled():
                     print('[WEBDRIVER] blue_po not found')
                     return
                 blue_po.click()
                 print('[WEBDRIVER] make bet blue 🔵', value, blue_po.text )
             elif color == 'red':
                 red_po = self.driver.find_element(By.XPATH, RED_XPATH)
-                if red_po is None:
+                if red_po is None and blue_po.isDisplayed() and blue_po.isEnabled():
                     print('[WEBDRIVER] red_po not found')
                     return
                 red_po.click()
