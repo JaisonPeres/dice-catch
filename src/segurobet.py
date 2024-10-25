@@ -14,12 +14,18 @@ IFRAME_3_PATH = '/html/body/div[5]/div[2]/iframe'
 RESULTS_PATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[1]/div/div/div'
 INACTIVITY_MESSAGE_PATH = 'div[data-role="inactivity-message-clickable"]'
 
+PRIVACY_OPT_IN_BUTTON_PATH = '/html/body/div[5]/div/div[2]/button[3]'
+
+BANNER_CLOSE_BUTTON_PATH = '/html/body/div[1]/div/div/div/div[3]/button'
+
 BLUE_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[1]/div[3]'
 RED_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[3]/div[3]'
 
 segurobet_catch_url = os.environ['SEGUROBET_CATCH_URL']
 segurobet_catch_username = os.environ['SEGUROBET_CATCH_USERNAME']
 segurobet_catch_password = os.environ['SEGUROBET_CATCH_PASSWORD']
+
+refresh_timer_minutes = 60 * 9 
 
 class Segurobet:
 
@@ -55,19 +61,37 @@ class Segurobet:
     def resolveInactivityMessage(self):
         if len(self.driver.find_elements(By.CSS_SELECTOR, INACTIVITY_MESSAGE_PATH)) > 0:
             self.driver.find_element(By.CSS_SELECTOR, INACTIVITY_MESSAGE_PATH).click()
+    
+    def closeBanner(self):
+        button = self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH)
+        if button is not None:
+            button.click()
 
     def loadFrames(self):
         print('[WEBDRIVER] loading frames')
+        self.refreshOnTimer()
         if not self.logged_session:
             self.login()
         handles_window = self.driver.window_handles[0]
         self.driver.switch_to.window(handles_window)
+        self.driver.find_element(By.XPATH, PRIVACY_OPT_IN_BUTTON_PATH).click()
         self.switchToCasinoIframe()
         self.switchToIframe(IFRAME_2_PATH)
         self.switchToIframe(IFRAME_3_PATH)
         self.frames_loaded = True
+
+    def refreshOnTimer(self):
+        initial_time = datetime.now()
+        while True:
+            current_time = datetime.now()
+            if (current_time - initial_time).seconds >= refresh_timer_minutes:
+                print('[WEBDRIVER] refreshing...')
+                self.driver.refresh()
+                self.loadFrames()
+                initial_time = datetime.now()
     
     def makeBet(self, color: str, value: int):
+        self.closeBanner()
         if not self.frames_loaded:
             self.updateResults()
         if color == 'blue':
