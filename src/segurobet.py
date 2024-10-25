@@ -118,22 +118,19 @@ class Segurobet:
                 blue_po = self.driver.find_element(By.XPATH, BLUE_XPATH)
                 if blue_po is not None and blue_po.is_displayed() and blue_po.is_enabled():
                     blue_po.click()
-                    return
-                print('[WEBDRIVER] blue_po not found')
-                return
+                else:
+                    print('[WEBDRIVER] blue_po not found')
             elif color == 'red':
                 red_po = self.driver.find_element(By.XPATH, RED_XPATH)
                 if red_po is not None and blue_po.is_displayed() and blue_po.is_enabled():
                     red_po.click()
-                    return
-                print('[WEBDRIVER] red_po not found')
-                return
+                else:
+                    print('[WEBDRIVER] red_po not found')
             else:
                 print('[WEBDRIVER] invalid color')
-                return
             return self.updateResults()
-        except Exception as error:
-            print('[WEBDRIVER] error making bet', color, error)
+        except:
+            print('[WEBDRIVER] error making bet', color)
             return
 
     def updateResults(self) -> list:
