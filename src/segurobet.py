@@ -25,6 +25,17 @@ segurobet_catch_password = os.environ['SEGUROBET_CATCH_PASSWORD']
 
 refresh_timer_minutes = 60 * 9 
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 class Segurobet:
 
     def __init__(self):
@@ -60,7 +71,7 @@ class Segurobet:
             iframe = self.driver.find_element(By.XPATH, iframe_xpath)
             self.driver.switch_to.frame(iframe)
         except Exception as error:
-            print('[WEBDRIVER] error switching to iframe', error)
+            print(bcolors.FAIL + '[WEBDRIVER] error switching to iframe', error)
             pass
 
 
@@ -78,18 +89,18 @@ class Segurobet:
             time.sleep(2)
             self.loadFrames()
         except:
-            print('[WEBDRIVER] error closing banner')
+            print(bcolors.FAIL + '[WEBDRIVER] error closing banner')
             pass
     
     def closePrivacyOptIn(self):
         try:
             self.driver.find_element(By.XPATH, PRIVACY_OPT_IN_BUTTON_PATH).click()
         except:
-            print('[WEBDRIVER] error closing privacy opt in')
+            print(bcolors.FAIL + '[WEBDRIVER] error closing privacy opt in')
             pass
 
     def loadFrames(self):
-        print('[WEBDRIVER] loading frames')
+        print(bcolors.OKCYAN + '[WEBDRIVER] loading frames')
         if not self.logged_session:
             self.login()
         handles_window = self.driver.window_handles[0]
@@ -104,7 +115,7 @@ class Segurobet:
         while True:
             current_time = datetime.now()
             if (current_time - initial_time).seconds >= refresh_timer_minutes:
-                print('[WEBDRIVER] refreshing...')
+                print(bcolors.OKCYAN + '[WEBDRIVER] refreshing...')
                 self.driver.refresh()
                 self.loadFrames()
                 initial_time = datetime.now()
@@ -119,18 +130,18 @@ class Segurobet:
                 if blue_po is not None and blue_po.is_displayed() and blue_po.is_enabled():
                     blue_po.click()
                 else:
-                    print('[WEBDRIVER] blue_po not found')
+                    print(bcolors.WARNING + '[WEBDRIVER] blue_po not found')
             elif color == 'red':
                 red_po = self.driver.find_element(By.XPATH, RED_XPATH)
                 if red_po is not None and blue_po.is_displayed() and blue_po.is_enabled():
                     red_po.click()
                 else:
-                    print('[WEBDRIVER] red_po not found')
+                    print(bcolors.WARNING + '[WEBDRIVER] red_po not found')
             else:
-                print('[WEBDRIVER] invalid color')
+                print(bcolors.WARNING + '[WEBDRIVER] invalid color')
             return self.updateResults()
         except:
-            print('[WEBDRIVER] error making bet', color)
+            print(bcolors.FAIL + '[WEBDRIVER] error making bet', color)
             return
 
     def updateResults(self) -> list:
@@ -147,9 +158,9 @@ class Segurobet:
 
     def login(self):
         if self.logged_session:
-            print('[WEBDRIVER] already logged')
+            print(bcolors.WARNING + '[WEBDRIVER] already logged')
             return
-        print('[WEBDRIVER] login in progress...')
+        print(bcolors.OKCYAN + '[WEBDRIVER] login in progress...')
         self.driver.get(segurobet_catch_url)
 
         while len(self.driver.find_elements(By.ID, 'username')) == 0:
@@ -166,6 +177,6 @@ class Segurobet:
                 pass
 
         self.logged_session = True
-        print('[WEBDRIVER] login success!')
+        print(bcolors.OKGREEN + '[WEBDRIVER] login success!')
         self.closePrivacyOptIn()
         time.sleep(5)
