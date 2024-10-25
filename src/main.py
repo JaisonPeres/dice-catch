@@ -159,7 +159,9 @@ def exit_handler():
     sys.exit(0)
 
 if __name__ == '__main__':
-    user_input = input("Init bot with SANDBOX mode? (y/n): ")
+    logger.info('DEMO MODE')
+    logger.info('If demo mode is enabled, the bot will not make bets')
+    user_input = input("Init bot with DEMO MODE enabled? (y/n): ")
     if user_input.lower() == "y":
         IS_SANDBOX = True
     else:
@@ -169,7 +171,7 @@ if __name__ == '__main__':
     logger.title('Dice Catch')
     logger.subtitle('Bot for catching dice signals\n')
     if IS_SANDBOX:
-        logger.warning('🕹️  SANDBOX MODE')
+        logger.warning('🕹️  DEMO MODE')
     else:
         logger.warning('💸 REAL MODE')
     logger.info(f'Starting at: {init_date_str}')
