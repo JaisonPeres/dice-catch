@@ -140,6 +140,7 @@ class Segurobet:
             if (current_time - initial_time).seconds >= refresh_timer_minutes:
                 logger.info('refreshing...')
                 self.driver.refresh()
+                self.setBannerOutOfPage()
                 self.loadFrames()
                 initial_time = datetime.now()
 
