@@ -1,8 +1,8 @@
 from seleniumbase import Driver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 from datetime import datetime
 import time 
 import os
@@ -54,17 +54,21 @@ class Segurobet:
         pass
 
     def switchToCasinoIframe(self):
-        iframe_names = [
-            CASINO_IFRAME_PATH,
-            CASINO_IFRAME_ACTIVE_PATH
-        ]
-        for iframe_name in iframe_names:
-            try:
-                iframe = self.driver.find_element(By.CLASS_NAME, iframe_name)
-                self.driver.switch_to.frame(iframe)
-                return True
-            except:
-                pass
+        try:
+            iframe_names = [
+                CASINO_IFRAME_PATH,
+                CASINO_IFRAME_ACTIVE_PATH
+            ]
+            for iframe_name in iframe_names:
+                try:
+                    iframe = self.driver.find_element(By.CLASS_NAME, iframe_name)
+                    self.driver.switch_to.frame(iframe)
+                    return True
+                except:
+                    pass
+        except Exception as error:
+            logger.error(f'error switching to casino iframe', error)
+            pass
 
     def switchToIframe(self, iframe_xpath: str):
         try:
@@ -131,7 +135,8 @@ class Segurobet:
                     logger.warning(f'SANDBOX MODE - Making bet on {color} with value {value}')
                     return
                 logger.info(f'Making bet on {color} with value {value}')
-                color_bet_button.click()
+                self.driver.implicitly_wait(10)
+                ActionChains(self.driver).move_to_element(color_bet_button).click(color_bet_button).perform()
             else:
                 logger.error(f'{color} button not found')
         except NoSuchElementException as error:
@@ -152,38 +157,47 @@ class Segurobet:
         return self.updateResults()
 
     def updateResults(self) -> list:
-        results = []
-        check_results = []
-        while len(self.driver.find_elements(By.XPATH, RESULTS_PATH)) == 0:
-            time.sleep(2)
-        results = self.driver.find_element(By.XPATH, RESULTS_PATH).text.split()[::-1][0:6]
+        try:
+            results = []
+            check_results = []
+            result = self.driver.find_elements(By.XPATH, RESULTS_PATH)
+            if len(result) == 0 or len(result[0].text.split()) == 0:
+                return results
+            results = self.driver.find_element(By.XPATH, RESULTS_PATH).text.split()[::-1][0:6]
 
-        # self.resolveInactivityMessage()
-        if results != check_results:
-            check_results = results
-            return results
+            # self.resolveInactivityMessage()
+            if results != check_results:
+                check_results = results
+                return results
+        except Exception as error:
+            logger.error('error updating results', error)
+            pass
 
     def login(self):
-        if self.logged_session:
-            logger.warning('already logged')
-            return
-        logger.info('login in progress...')
-        self.driver.get(segurobet_catch_url)
+        try:
+            if self.logged_session:
+                logger.warning('already logged')
+                return
+            logger.info('login in progress...')
+            self.driver.get(segurobet_catch_url)
 
-        while len(self.driver.find_elements(By.ID, 'username')) == 0:
-            time.sleep(2)
+            while len(self.driver.find_elements(By.ID, 'username')) == 0:
+                time.sleep(2)
 
-        self.driver.find_element(By.ID, 'username').send_keys(segurobet_catch_username)
-        self.driver.find_element(By.ID, 'password').send_keys(segurobet_catch_password)
+            self.driver.find_element(By.ID, 'username').send_keys(segurobet_catch_username)
+            self.driver.find_element(By.ID, 'password').send_keys(segurobet_catch_password)
 
-        for x in range(100):
-            try:
-                self.driver.find_element(By.XPATH, f'/html/body/div[{str(x)}]/div/div/div/div/div/form/button').click()
-                break
-            except:
-                pass
+            for x in range(100):
+                try:
+                    self.driver.find_element(By.XPATH, f'/html/body/div[{str(x)}]/div/div/div/div/div/form/button').click()
+                    break
+                except:
+                    pass
 
-        self.logged_session = True
-        logger.info('login success!')
-        self.closePrivacyOptIn()
-        time.sleep(5)
+            self.logged_session = True
+            logger.info('login success!')
+            self.closePrivacyOptIn()
+            time.sleep(5)
+        except Exception as error:
+            logger.error('error logging in', error)
+            pass

@@ -33,6 +33,8 @@ count_results_file = f'./log-count-results-{timestamp}.csv'
 init_date = datetime.now()
 init_date_str = init_date.strftime('%Y-%m-%d %H:%M:%S')
 
+IS_SANDBOX = os.environ.get('SANDBOX') == 'true'
+
 # PROCESS TELEGRAM COMMAND
 @app.route('/command ?(.*)')
 def example_command(message: dict, cmd: str):
@@ -154,7 +156,9 @@ def notify(message: str):
 if __name__ == '__main__':
     logger.clear()
     logger.title('Dice Catch')
-    logger.subtitle('Bot for catching dice signals\n\n')
+    logger.subtitle('Bot for catching dice signals\n')
+    if IS_SANDBOX:
+        logger.warning('SANDBOX MODE')
     logger.info(f'Starting at: {init_date_str}')
     seg.init()
     app.config['api_key'] = telegram_api_key
