@@ -116,14 +116,14 @@ class Segurobet:
                 self.updateResults()
             if color == 'blue':
                 blue_po = self.driver.find_element(By.XPATH, BLUE_XPATH)
-                if blue_po is not None and blue_po.isDisplayed() and blue_po.isEnabled():
+                if blue_po is not None and blue_po.is_displayed() and blue_po.is_enabled():
                     blue_po.click()
                     return
                 print('[WEBDRIVER] blue_po not found')
                 return
             elif color == 'red':
                 red_po = self.driver.find_element(By.XPATH, RED_XPATH)
-                if red_po is not None and blue_po.isDisplayed() and blue_po.isEnabled():
+                if red_po is not None and blue_po.is_displayed() and blue_po.is_enabled():
                     red_po.click()
                     return
                 print('[WEBDRIVER] red_po not found')
