@@ -8,7 +8,6 @@ from logger import Logger
 
 seg = Segurobet()
 app = TeleBot(__name__)
-
 logger = Logger('Bot')
 
 signals = {
@@ -64,13 +63,11 @@ def receive(message: dict):
     processMessage(user_msg, base_log)
 
 def processMessage(message: str, base_log: dict):
-    # Check if message is a signal
     for signal_msg, signal_key in signals.items():
         if signal_msg in message:
             base_log['signal'] = signal_key
             processSignal(signal_key, base_log)
             break
-    # Check if message is a result
     for result_msg, result_key in results.items():
         if result_msg in message:
             base_log['result'] = result_key
