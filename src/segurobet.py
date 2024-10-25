@@ -6,6 +6,7 @@ from datetime import datetime
 import time 
 import os
 import sys
+import threading
 
 CASINO_IFRAME_PATH = 'x-casinoGameSingleViewIframe__iframe'
 CASINO_IFRAME_ACTIVE_PATH = 'x-casinoGameSingleViewIframe__iframe--active'
@@ -35,7 +36,10 @@ class Segurobet:
         self.logged_session = False
         self.frames_loaded = False
         self.login()
-        self.loadFrames()
+        loadFramesThread = threading.Thread(name='loadFramesThread', target=self.loadFrames)
+        refreshThread = threading.Thread(name='refreshThread', target=self.refreshOnTimer)
+        loadFramesThread.start()
+        refreshThread.start()
         self.updateResults()
         pass
 
@@ -53,28 +57,46 @@ class Segurobet:
                 pass
 
     def switchToIframe(self, iframe_xpath: str):
-        while len(self.driver.find_elements(By.XPATH, iframe_xpath)) == 0:
-            time.sleep(2)
-        iframe = self.driver.find_element(By.XPATH, iframe_xpath)
-        self.driver.switch_to.frame(iframe)
+        try:
+            while len(self.driver.find_elements(By.XPATH, iframe_xpath)) == 0:
+                time.sleep(2)
+            iframe = self.driver.find_element(By.XPATH, iframe_xpath)
+            self.driver.switch_to.frame(iframe)
+        except Exception as error:
+            print('[WEBDRIVER] error switching to iframe', error)
+            pass
 
-    def resolveInactivityMessage(self):
-        if len(self.driver.find_elements(By.CSS_SELECTOR, INACTIVITY_MESSAGE_PATH)) > 0:
-            self.driver.find_element(By.CSS_SELECTOR, INACTIVITY_MESSAGE_PATH).click()
+
+    # def resolveInactivityMessage(self):
+    #     try:
+    #         self.driver.find_element(By.CSS_SELECTOR, INACTIVITY_MESSAGE_PATH).click()
+    #     except:
+    #         print('[WEBDRIVER] error resolving inactivity message')
+    #         pass
     
     def closeBanner(self):
-        button = self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH)
-        if button is not None:
-            button.click()
+        try:
+            self.driver.switch_to.default_content()
+            self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH).click()
+            time.sleep(2)
+            self.loadFrames()
+        except Exception as error:
+            print('[WEBDRIVER] error closing banner', error)
+            pass
+    
+    def closePrivacyOptIn(self):
+        try:
+            self.driver.find_element(By.XPATH, PRIVACY_OPT_IN_BUTTON_PATH).click()
+        except Exception as error:
+            print('[WEBDRIVER] error closing privacy opt in', error)
+            pass
 
     def loadFrames(self):
         print('[WEBDRIVER] loading frames')
-        self.refreshOnTimer()
         if not self.logged_session:
             self.login()
         handles_window = self.driver.window_handles[0]
         self.driver.switch_to.window(handles_window)
-        self.driver.find_element(By.XPATH, PRIVACY_OPT_IN_BUTTON_PATH).click()
         self.switchToCasinoIframe()
         self.switchToIframe(IFRAME_2_PATH)
         self.switchToIframe(IFRAME_3_PATH)
@@ -91,29 +113,31 @@ class Segurobet:
                 initial_time = datetime.now()
     
     def makeBet(self, color: str, value: int):
-        self.closeBanner()
-        if not self.frames_loaded:
-            self.updateResults()
-        if color == 'blue':
-            # MAKE BET BLU
-            blue_po = self.driver.find_element(By.XPATH, BLUE_XPATH)
-            if blue_po is None:
-                print('[WEBDRIVER] blue_po not found')
+        try:
+            self.closeBanner()
+            if not self.frames_loaded:
+                self.updateResults()
+            if color == 'blue':
+                blue_po = self.driver.find_element(By.XPATH, BLUE_XPATH)
+                if blue_po is None:
+                    print('[WEBDRIVER] blue_po not found')
+                    return
+                blue_po.click()
+                print('[WEBDRIVER] make bet blue 🔵', value, blue_po.text )
+            elif color == 'red':
+                red_po = self.driver.find_element(By.XPATH, RED_XPATH)
+                if red_po is None:
+                    print('[WEBDRIVER] red_po not found')
+                    return
+                red_po.click()
+                print('[WEBDRIVER] make bet red 🔴', value, red_po.text)
+            else:
+                print('[WEBDRIVER] invalid color')
                 return
-            blue_po.click()
-            print('[WEBDRIVER] make bet blue 🔵', value, blue_po.text )
-        elif color == 'red':
-            # MAKE BET RED
-            red_po = self.driver.find_element(By.XPATH, RED_XPATH)
-            if red_po is None:
-                print('[WEBDRIVER] red_po not found')
-                return
-            red_po.click()
-            print('[WEBDRIVER] make bet red 🔴', value, red_po.text)
-        else:
-            print('[WEBDRIVER] invalid color')
+            return self.updateResults()
+        except Exception as error:
+            print('[WEBDRIVER] error making bet', color, error)
             return
-        return self.updateResults()
 
     def updateResults(self) -> list:
         results = []
@@ -122,7 +146,7 @@ class Segurobet:
             time.sleep(2)
         results = self.driver.find_element(By.XPATH, RESULTS_PATH).text.split()[::-1][0:6]
 
-        self.resolveInactivityMessage()
+        # self.resolveInactivityMessage()
         if results != check_results:
             check_results = results
             return results
@@ -149,4 +173,5 @@ class Segurobet:
 
         self.logged_session = True
         print('[WEBDRIVER] login success!')
-        time.sleep(20)
+        self.closePrivacyOptIn()
+        time.sleep(5)
