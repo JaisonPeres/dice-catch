@@ -77,15 +77,15 @@ class Segurobet:
             self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH).click()
             time.sleep(2)
             self.loadFrames()
-        except Exception as error:
-            print('[WEBDRIVER] error closing banner', error)
+        except:
+            print('[WEBDRIVER] error closing banner')
             pass
     
     def closePrivacyOptIn(self):
         try:
             self.driver.find_element(By.XPATH, PRIVACY_OPT_IN_BUTTON_PATH).click()
-        except Exception as error:
-            print('[WEBDRIVER] error closing privacy opt in', error)
+        except:
+            print('[WEBDRIVER] error closing privacy opt in')
             pass
 
     def loadFrames(self):
