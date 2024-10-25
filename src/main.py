@@ -79,7 +79,7 @@ def processMessage(message: str, base_log: dict):
 
 def processSignal(signal: str, base_log: dict):
     signal_file = CsvFile(f'./log-signal-{timestamp}.csv')
-    logger.info(f'Processing signal: {signal}')
+    logger.info(f'Received signal: {signal}')
     notify(f'Making bet on {signal} with value {value_to_bet}')
     result = seg.bet(signal, value_to_bet)
     result = str(result).replace(',', '-').replace('[', '').replace(']', '').replace(' ', '').replace("'", "")
