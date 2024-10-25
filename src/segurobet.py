@@ -49,10 +49,8 @@ class Segurobet:
         self.logged_session = False
         self.frames_loaded = False
         self.login()
-        # closeBannerThread = threading.Thread(name='closeBanner', target=self.closeBanner)
         loadFramesThread = threading.Thread(name='loadFramesThread', target=self.loadFrames)
         refreshThread = threading.Thread(name='refreshThread', target=self.refreshOnTimer)
-        # closeBannerThread.start()
         loadFramesThread.start()
         refreshThread.start()
         self.updateResults()
@@ -84,32 +82,11 @@ class Segurobet:
         except Exception as error:
             logger.error(f'error switching to iframe', error)
             pass
-
-
-    # def resolveInactivityMessage(self):
-    #     try:
-    #         self.driver.find_element(By.CSS_SELECTOR, INACTIVITY_MESSAGE_PATH).click()
-    #     except:
-    #         print('[WEBDRIVER] error resolving inactivity message')
-    #         pass
     
     def closeBanner(self):
         logger.info('closing banner...')
         try:
             self.driver.switch_to.default_content()
-            # errors = [NoSuchElementException, ElementNotInteractableException]
-            # wait = WebDriverWait(self.driver, timeout=2, poll_frequency=.2, ignored_exceptions=errors)
-            # # close_banner_button  = self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH)
-            # # wait.until(lambda d : close_banner_button.send_keys("Displayed") or True)
-            # # close_banner_button.click()
-            # banner = self.driver.find_element(By.XPATH, BANNER_PATH)
-
-            # wait.until(lambda d : banner.is_displayed())
-
-            # banner.send_keys("Displayed")
-            # if banner.get_property("value") == "Displayed":
-            # errors = [NoSuchElementException, ElementNotInteractableException]
-            # wait = WebDriverWait(self.driver, timeout=2, poll_frequency=.2, ignored_exceptions=errors)
             banner_close = self.driver.find_element(By.XPATH, BANNER_CLOSE_BUTTON_PATH)
             if banner_close is not None and banner_close.is_displayed() and banner_close.is_enabled():
                 banner_close.click()
@@ -156,15 +133,11 @@ class Segurobet:
     def makeBetHandler(self, color: str, path: str, value: int):
         try:
             color_bet_button = self.driver.find_element(By.XPATH, path)
-            # wait = WebDriverWait(self.driver, 10)
-            # color_bet_button = wait.until(EC.element_to_be_clickable((By.XPATH, path)))
             if color_bet_button is not None and color_bet_button.is_displayed() and color_bet_button.is_enabled():
-                if self.sandbox:
-                    logger.warning(f'SANDBOX MODE - Making bet on {color} with value {value}')
-                    return
                 logger.info(f'Making bet on {color} with value {value}')
                 self.driver.implicitly_wait(10)
-                ActionChains(self.driver).move_to_element(color_bet_button).click(color_bet_button).perform()
+                color_bet_button.click()
+                # ActionChains(self.driver).move_to_element(color_bet_button).click(color_bet_button).perform()
             else:
                 logger.error(f'{color} button not found')
         except NoSuchElementException as error:
@@ -193,7 +166,6 @@ class Segurobet:
                 return results
             results = self.driver.find_element(By.XPATH, RESULTS_PATH).text.split()[::-1][0:6]
 
-            # self.resolveInactivityMessage()
             if results != check_results:
                 check_results = results
                 return results

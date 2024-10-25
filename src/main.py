@@ -169,7 +169,7 @@ if __name__ == '__main__':
 
     logger.clear()
     logger.title('Dice Catch')
-    logger.subtitle('Bot for catching dice signals\n')
+    logger.subtitle('Bot for catching dice signals and auto make bets\n')
     if IS_SANDBOX:
         logger.warning('🕹️  DEMO MODE')
     else:
