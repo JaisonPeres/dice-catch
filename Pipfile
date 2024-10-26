@@ -11,6 +11,7 @@ telebot = "*"
 pandas = "*"
 pyfiglet = "*"
 rich = "*"
+pytelegrambotapi = "*"
 
 [dev-packages]
 

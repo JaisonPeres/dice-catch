@@ -41,6 +41,10 @@ class Segurobet:
         self.sandbox = True
         pass
 
+    def stop(self):
+        self.driver.quit()
+        pass
+
     def init(self, sandbox: bool):
         self.sandbox = sandbox
         self.driver = Driver(uc=True, headless=False)
@@ -149,16 +153,15 @@ class Segurobet:
             color_bet_button = self.driver.find_element(By.XPATH, path)
             if color_bet_button is not None and color_bet_button.is_displayed() and color_bet_button.is_enabled():
                 logger.info(f'Making bet on {color} with value {value}')
-                self.driver.implicitly_wait(10)
+                # self.driver.implicitly_wait(10)
                 color_bet_button.click()
-                # ActionChains(self.driver).move_to_element(color_bet_button).click(color_bet_button).perform() 
             else:
                 logger.error(f'{color} button not found')
         except NoSuchElementException as error:
             logger.error(f'error making bet {color}', error.msg)
             pass
     
-    def bet(self, color: str, value: int):
+    def bet(self, color: str, value: int) -> list:
         # self.closeBanner()
         if not self.frames_loaded:
             self.updateResults()

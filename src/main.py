@@ -6,6 +6,7 @@ from csv_file import CsvFile
 import uuid
 from logger import Logger
 import sys
+from counter import Counter
 
 seg = Segurobet()
 app = TeleBot(__name__)
@@ -25,23 +26,39 @@ telegram_api_key = os.environ['TELEGRAM_API_KEY']
 telegram_notify_list = os.environ['TELEGRAM_NOTIFY_LIST']
 notify_list = telegram_notify_list.split(',')
 value_to_bet = 5
-
 timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-
 count_results_file = f'./log-count-results-{timestamp}.csv'
-
-
 init_date = datetime.now()
 init_date_str = init_date.strftime('%Y-%m-%d %H:%M:%S')
-
 IS_SANDBOX = True
 
-# PROCESS TELEGRAM COMMAND
-@app.route('/command ?(.*)')
-def example_command(message: dict, cmd: str):
-    chat_from = message['chat']['id']
-    msg = "Command Recieved: {}".format(cmd)
-    app.send_message(chat_from, msg)
+max_red_counter = Counter(1)
+
+@app.route('/help')
+def help_command(message: dict):
+    date = message['date'] if 'date' in message else ''
+    if checkMessageOld(date):
+        return
+    notify(f'Available commands:\n/start (Start the webdrive)\n/stop (Stop the webdrive)\n/help\n')
+
+@app.route('/start')
+def start_command(message: dict):
+    date = message['date'] if 'date' in message else ''
+    if checkMessageOld(date):
+        return
+    logger.warning('Webdrive started')
+    notify('Webdrive started')
+    notify_init_bot()
+    seg.init(IS_SANDBOX)
+
+@app.route('/stop')
+def example_command(message: dict):
+    date = message['date'] if 'date' in message else ''
+    if checkMessageOld(date):
+        return
+    notify('Webdrive stopped')
+    logger.warning('Webdrive stopped')
+    seg.stop()
 
 # PROCESS TELEGRAM MESSAGE
 @app.route('(?!/).+')
@@ -81,6 +98,12 @@ def processSignal(signal: str, base_log: dict):
     signal_file = CsvFile(f'./log-signal-{timestamp}.csv')
     logger.info(f'Received signal: {signal}')
     notify(f'Making bet on {signal} with value {value_to_bet}')
+    # disabled = max_red_counter.is_max()
+    # if disabled:
+    #     msg = f'🚫 Disabled by max red counter ({max_red_counter.get_max()})'
+    #     notify(msg)
+    #     logger.warning(msg)
+        
     result = seg.bet(signal, value_to_bet)
     result = str(result).replace(',', '-').replace('[', '').replace(']', '').replace(' ', '').replace("'", "")
     signal_file.add_row({**base_log, result: result})
@@ -107,8 +130,10 @@ def countResult(result_key: str):
             df['result'] = ''
             if result_key == 'red':
                 total_red = 1
+                # max_red_counter.increment()
             elif result_key == 'green':
                 total_green = 1
+                # max_red_counter.reset()
             count_result_file.add_row({
                 'icon': icon,
                 'id': result_id,
@@ -158,6 +183,16 @@ def exit_handler():
     logger.warning('Exiting...')
     sys.exit(0)
 
+def notify_init_bot():
+    message = [
+        '🚨 WEBDRIVER STARTED 🚨\n',
+        f'🕹️ Mode: {"DEMO" if IS_SANDBOX else "REAL"}\n',
+        f'📅 Starting at: {init_date_str}\n',
+        f'💵 Value: {value_to_bet}\n',
+        '⏱️ Waiting for signals and results...'
+    ]
+    notify(''.join(message))
+
 if __name__ == '__main__':
     logger.info('DEMO MODE')
     logger.info('If demo mode is enabled, the bot will not make bets')
@@ -170,12 +205,14 @@ if __name__ == '__main__':
     logger.clear()
     logger.title('Dice Catch')
     logger.subtitle('Bot for catching dice signals and auto make bets\n')
-    if IS_SANDBOX:
-        logger.warning('🕹️  DEMO MODE')
-    else:
-        logger.warning('💸 REAL MODE')
+    # if IS_SANDBOX:
+    #     logger.warning('🕹️  DEMO MODE')
+    # else:
+    #     logger.warning('💸 REAL MODE')
     logger.info(f'Starting at: {init_date_str}')
-    seg.init(IS_SANDBOX)
+    # seg.init(IS_SANDBOX)
     logger.success('Bot listening...')
     app.config['api_key'] = telegram_api_key
+    notify('Bot started')
+    notify(' /start to start the webdriver\n/stop to stop the webdriver')
     app.poll(debug=True)
