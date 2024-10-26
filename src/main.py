@@ -56,9 +56,13 @@ def example_command(message: dict):
     date = message['date'] if 'date' in message else ''
     if checkMessageOld(date):
         return
-    notify('Webdrive stopped')
-    logger.warning('Webdrive stopped')
-    seg.stop()
+    if (seg.isStarted()):
+        notify('Webdrive stopped')
+        logger.warning('Webdrive stopped')
+        seg.stop()
+    else:
+        notify('Webdrive not started')
+        logger.warning('Webdrive not started')
 
 # PROCESS TELEGRAM MESSAGE
 @app.route('(?!/).+')
@@ -213,6 +217,6 @@ if __name__ == '__main__':
     # seg.init(IS_SANDBOX)
     logger.success('Bot listening...')
     app.config['api_key'] = telegram_api_key
-    notify('Bot started')
-    notify(' /start to start the webdriver\n/stop to stop the webdriver')
+    notify('Bot initialized')
+    notify('/start to start the webdriver')
     app.poll(debug=True)
