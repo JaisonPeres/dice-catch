@@ -15,6 +15,7 @@ logger = Logger('Webdriver')
 
 CASINO_IFRAME_PATH = 'x-casinoGameSingleViewIframe__iframe'
 CASINO_IFRAME_ACTIVE_PATH = 'x-casinoGameSingleViewIframe__iframe--active'
+IFRAME_1_PATH = '/html/body/div[8]/div[1]/div/div/div/div/div/div/div/div[2]/div[2]/div/iframe'
 IFRAME_2_PATH = '/html/body/div[2]/div/div[1]/div/iframe'
 IFRAME_3_PATH = '/html/body/div[5]/div[2]/iframe'
 RESULTS_PATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[1]/div/div/div'
@@ -63,7 +64,6 @@ class Segurobet:
     
     def setBannerOutOfPage(self):
         try:
-            # create a style tag with class .hb-modal-wrp and set translate to -100%
             self.driver.execute_script('''
                 var style = document.createElement('style');
                 style.innerHTML = '.hb-modal-wrp { transform: translate(1000px); }';
@@ -90,11 +90,15 @@ class Segurobet:
             logger.error(f'error switching to casino iframe', error)
             pass
 
-    def switchToIframe(self, iframe_xpath: str):
+    def switchToIframe(self, iframe_xpath: str, open: bool = False):
+        logger.info(f'switching to iframe {iframe_xpath}...')
         try:
-            while len(self.driver.find_elements(By.XPATH, iframe_xpath)) == 0:
-                time.sleep(2)
             iframe = self.driver.find_element(By.XPATH, iframe_xpath)
+            if open:
+                iframeSrc = iframe.get_attribute('src')
+                logger.info(f'opening iframe url {iframeSrc}')
+                self.driver.get(iframeSrc)
+                return
             self.driver.switch_to.frame(iframe)
         except Exception as error:
             logger.error(f'error switching to iframe', error)
@@ -127,8 +131,9 @@ class Segurobet:
                 self.login()
             handles_window = self.driver.window_handles[0]
             self.driver.switch_to.window(handles_window)
-            self.switchToCasinoIframe()
+            self.switchToIframe(IFRAME_1_PATH)
             self.switchToIframe(IFRAME_2_PATH)
+            self.switchToIframe(IFRAME_3_PATH, True)
             self.switchToIframe(IFRAME_3_PATH)
             self.frames_loaded = True
             logger.success('game frames loaded!')
@@ -153,7 +158,6 @@ class Segurobet:
             color_bet_button = self.driver.find_element(By.XPATH, path)
             if color_bet_button is not None and color_bet_button.is_displayed() and color_bet_button.is_enabled():
                 logger.info(f'Making bet on {color} with value {value}')
-                # self.driver.implicitly_wait(10)
                 color_bet_button.click()
             else:
                 logger.error(f'{color} button not found')
@@ -162,7 +166,6 @@ class Segurobet:
             pass
     
     def bet(self, color: str, value: int) -> list:
-        # self.closeBanner()
         if not self.frames_loaded:
             self.updateResults()
     
