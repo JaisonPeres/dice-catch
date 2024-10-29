@@ -27,6 +27,11 @@ BLUE_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/
 RED_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[3]/div[3]'
 AMOUNT_XPATH = '/html/body/div[4]/div/div/div[2]/div[9]/div[3]/div/div/div[1]/div/span[2]/span'
 
+# CONFIRM_BLUE_BET_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[1]/div[5]'
+# CONFIRM_RED_BET_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[3]/div[5]'
+
+COUNTDOWN_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[1]/div'
+
 segurobet_catch_url = os.environ['SEGUROBET_CATCH_URL']
 segurobet_catch_username = os.environ['SEGUROBET_CATCH_USERNAME']
 segurobet_catch_password = os.environ['SEGUROBET_CATCH_PASSWORD']
@@ -36,6 +41,9 @@ refresh_timer_seconds = 60 * int(env_minutes) if env_minutes is not None else 5 
 
 RED_COLOR = 'red'
 BLUE_COLOR = 'blue'
+
+min_amount_keep = 20
+currency_symbol = 'R$'
 
 class Segurobet:
 
@@ -53,7 +61,7 @@ class Segurobet:
     def init(self, sandbox: bool):
         self.sandbox = sandbox
         self.driver = Driver(uc=True, headless=False)
-        self.driver.maximize_window()
+        # self.driver.maximize_window()
         self.driver.get(segurobet_catch_url)
         self.logged_session = False
         self.frames_loaded = False
@@ -156,20 +164,42 @@ class Segurobet:
             time.sleep(refresh_timer_seconds)
             logger.info('Refreshing...')
             self.refresh()
-
-    def makeBetHandler(self, color: str, path: str, value: int):
+    
+    def canBet(self) -> bool:
         try:
-            color_bet_button = self.driver.find_element(By.XPATH, path)
-            if color_bet_button is not None and color_bet_button.is_displayed() and color_bet_button.is_enabled():
-                logger.info(f'Making bet on {color} with value {value}')
-                color_bet_button.click()
-            else:
-                logger.error(f'{color} button not found')
+            countdown = self.driver.find_element(By.XPATH, COUNTDOWN_XPATH)
+            if countdown is not None and countdown.is_displayed() and countdown.is_enabled():
+                return True
+        except NoSuchElementException as error:
+            logger.error(f'error find countdown', error.msg)
+            return False
+
+    def makeBetHandler(self, color: str, path: str, value: int = 5):
+        try:
+            max_attempts = 5
+            while max_attempts > 0:
+                if self.canBet():
+                    color_bet_button = self.driver.find_element(By.XPATH, path)
+                    if color_bet_button is not None and color_bet_button.is_displayed() and color_bet_button.is_enabled():
+                        logger.info(f'Making bet on {color} with value {value}')
+                        color_bet_button.click()
+                        time.sleep(2)
+                        break
+                else:
+                    logger.warning(f'Cannot make bet on {color} with value {value}')
+                    max_attempts -= 1
+                    time.sleep(1)
         except NoSuchElementException as error:
             logger.error(f'error making bet {color}', error.msg)
             pass
     
     def bet(self, color: str, value: int) -> list:
+        # amount = self.getAmount()
+        # amount = float(amount.replace(currency_symbol, ''))
+        # logger.info(f'Amount: {amount}')
+        # if int(amount) < min_amount_keep:
+        #     logger.error(f'Not enough amount to bet: {amount}')
+        #     return
         if not self.frames_loaded:
             self.updateResults()
     
@@ -197,7 +227,7 @@ class Segurobet:
             logger.error('error updating results', error)
             pass
 
-    def getAmount(self) -> int:
+    def getAmount(self) -> str:
         try:
             return self.driver.find_element(By.XPATH, AMOUNT_XPATH).text
         except Exception as error:

@@ -66,6 +66,16 @@ def refresh_command(message: dict):
     logger.warning('Webdrive refreshing...')
     seg.refresh()
 
+@app.route('/restart')
+def refresh_command(message: dict):
+    date = message['date'] if 'date' in message else ''
+    if checkMessageOld(date):
+        return
+    notify('Webdrive restarting...')
+    logger.warning('Webdrive restarting...')
+    seg.stop()
+    seg.init(IS_SANDBOX)
+
 @app.route('/help')
 def help_command(message: dict):
     date = message['date'] if 'date' in message else ''
@@ -77,6 +87,7 @@ def help_command(message: dict):
         '/start - Start the webdrive\n',
         '/stop - Stop the webdrive\n',
         '/refresh - Refresh the webdrive\n',
+        '/restart - Restart the webdrive\n',
         '/amount - Show the amount\n',
     ]
 
