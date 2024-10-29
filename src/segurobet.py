@@ -25,6 +25,7 @@ BANNER_PATH = '/html/body/div[1]/div/div/div'
 BANNER_CLOSE_BUTTON_PATH = '/html/body/div[1]/div/div/div/div[3]/button'
 BLUE_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[1]/div[3]'
 RED_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[3]/div[3]'
+AMOUNT_XPATH = '/html/body/div[4]/div/div/div[2]/div[9]/div[3]/div/div/div[1]/div/span[2]/span'
 
 segurobet_catch_url = os.environ['SEGUROBET_CATCH_URL']
 segurobet_catch_username = os.environ['SEGUROBET_CATCH_USERNAME']
@@ -194,6 +195,13 @@ class Segurobet:
                 return results
         except Exception as error:
             logger.error('error updating results', error)
+            pass
+
+    def getAmount(self) -> int:
+        try:
+            return self.driver.find_element(By.XPATH, AMOUNT_XPATH).text
+        except Exception as error:
+            logger.error('error getting amount', error)
             pass
 
     def login(self):

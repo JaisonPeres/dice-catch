@@ -81,6 +81,15 @@ def help_command(message: dict):
 
     notify(''.join(message))
 
+@app.route('/amount')
+def help_command(message: dict):
+    date = message['date'] if 'date' in message else ''
+    if checkMessageOld(date):
+        return
+    amout = seg.getAmount()
+
+    notify(f'💵 Amount: {amout}')
+
 # PROCESS TELEGRAM MESSAGE
 @app.route('(?!/).+')
 def receive(message: dict):
