@@ -4,12 +4,11 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
-from datetime import datetime
 import time 
 import os
-import sys
 import threading
 from logger import Logger
+import re
 
 logger = Logger('Webdriver')
 
@@ -42,13 +41,16 @@ refresh_timer_seconds = 60 * int(env_minutes) if env_minutes is not None else 5 
 RED_COLOR = 'red'
 BLUE_COLOR = 'blue'
 
-min_amount_keep = 20
+min_amount_keep = 10.00
+stop_loss = 10.00
+stop_profit = 100.00
 currency_symbol = 'R$'
 
 class Segurobet:
 
     def __init__(self):
         self.sandbox = True
+        self.initial_amount = 0.0
         pass
 
     def stop(self):
@@ -193,13 +195,46 @@ class Segurobet:
             logger.error(f'error making bet {color}', error.msg)
             pass
     
+    def currencyStringToFloat(self, currency: str) -> float:
+        cleaned_string = re.sub(r'[^\d,]', '', currency).replace(',', '.')
+        try:
+            return float(cleaned_string)
+        except ValueError as error:
+            logger.error(f'error converting currency string to float', error)
+            return 0.0
+    
+    def checkAmount(self) -> bool:
+        try:
+            current_amount = self.currencyStringToFloat(self.getAmount())
+            if (self.initial_amount == 0.0):
+                self.initial_amount = current_amount
+            if (self.initial_amount == 0.0):
+                return False
+            
+            profit = 0.0
+            loss = 0.0
+
+            if current_amount > self.initial_amount:
+                profit = current_amount - self.initial_amount
+                logger.info(f'Profit: {profit}')
+            if current_amount < self.initial_amount:
+                loss = self.initial_amount - current_amount
+                logger.info(f'Loss: {loss}')
+            
+            if profit >= stop_profit:
+                logger.warning(f'Stop profit reached: {profit}')
+                return True
+
+            if loss >= stop_loss:
+                logger.warning(f'Stop loss reached: {loss}')
+                return True
+            return False
+        except Exception as error:
+            logger.error('error checking amount', error)
+            return False
+    
     def bet(self, color: str, value: int) -> list:
-        # amount = self.getAmount()
-        # amount = float(amount.replace(currency_symbol, ''))
-        # logger.info(f'Amount: {amount}')
-        # if int(amount) < min_amount_keep:
-        #     logger.error(f'Not enough amount to bet: {amount}')
-        #     return
+        self.checkAmount()
         if not self.frames_loaded:
             self.updateResults()
     
