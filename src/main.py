@@ -73,10 +73,11 @@ def help_command(message: dict):
         return
     message = [
         'BOT HELPER\n\n',
+        '/help - Show this message\n',
         '/start - Start the webdrive\n',
         '/stop - Stop the webdrive\n',
         '/refresh - Refresh the webdrive\n',
-        '/help - Show this message\n',
+        '/amount - Show the amount\n',
     ]
 
     notify(''.join(message))
