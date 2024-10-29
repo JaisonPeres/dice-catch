@@ -60,9 +60,9 @@ class Segurobet:
         self.login()
         self.setBannerOutOfPage()
         loadFramesThread = threading.Thread(name='loadFramesThread', target=self.loadFrames)
-        dummieInteractThread = threading.Thread(name='dummieInteractThread', target=self.dummieInteract)
+        refreshFramesThread = threading.Thread(name='refreshFramesThread', target=self.refreshFrames)
         loadFramesThread.start()
-        dummieInteractThread.start()
+        refreshFramesThread.start()
         self.updateResults()
         pass
     
@@ -150,12 +150,12 @@ class Segurobet:
             logger.error('error loading game frames', error)
             pass
 
-    def dummieInteract(self):
-        logger.info(f'Generating dummie interact every {refresh_timer_seconds / 60} minutes')
+    def refreshFrames(self):
+        logger.info(f'Refresh frames every {refresh_timer_seconds / 60} minutes')
         while True:
             time.sleep(refresh_timer_seconds)
-            logger.info('Dummie interact...')
-            self.driver.find_element(By.XPATH, '/html/body/div[4]/div/div/div[2]/div[1]/div/div/div/div/div[2]').click()
+            logger.info('Refreshing...')
+            self.refresh()
 
     def makeBetHandler(self, color: str, path: str, value: int):
         try:
