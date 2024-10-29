@@ -106,6 +106,11 @@ class Segurobet:
         except Exception as error:
             logger.error(f'error switching to iframe', error)
             pass
+
+    def refresh(self):
+        self.driver.refresh()
+        self.switchToIframe(IFRAME_3_PATH)
+        pass
     
     def closeBanner(self):
         logger.info('closing banner...')
