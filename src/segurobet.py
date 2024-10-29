@@ -31,7 +31,7 @@ segurobet_catch_username = os.environ['SEGUROBET_CATCH_USERNAME']
 segurobet_catch_password = os.environ['SEGUROBET_CATCH_PASSWORD']
 
 env_minutes = os.environ.get('REFRESH_TIMER_MINUTES')
-refresh_timer_minutes = 60 * int(env_minutes) if env_minutes is not None else 5
+refresh_timer_seconds = 60 * int(env_minutes) if env_minutes is not None else 5 * 60
 
 RED_COLOR = 'red'
 BLUE_COLOR = 'blue'
@@ -46,6 +46,9 @@ class Segurobet:
         self.driver.quit()
         pass
 
+    def isStarted(self):
+        return self.driver is not None
+
     def init(self, sandbox: bool):
         self.sandbox = sandbox
         self.driver = Driver(uc=True, headless=False)
@@ -56,9 +59,9 @@ class Segurobet:
         self.login()
         self.setBannerOutOfPage()
         loadFramesThread = threading.Thread(name='loadFramesThread', target=self.loadFrames)
-        refreshThread = threading.Thread(name='refreshThread', target=self.refreshOnTimer)
+        dummieInteractThread = threading.Thread(name='dummieInteractThread', target=self.dummieInteract)
         loadFramesThread.start()
-        refreshThread.start()
+        dummieInteractThread.start()
         self.updateResults()
         pass
     
@@ -141,17 +144,12 @@ class Segurobet:
             logger.error('error loading game frames', error)
             pass
 
-    def refreshOnTimer(self):
-        logger.info(f'refreshing on timer every {refresh_timer_minutes / 60} minutes')
-        initial_time = datetime.now()
+    def dummieInteract(self):
+        logger.info(f'Generating dummie interact every {refresh_timer_seconds / 60} minutes')
         while True:
-            current_time = datetime.now()
-            if (current_time - initial_time).seconds >= refresh_timer_minutes:
-                logger.info('refreshing...')
-                self.driver.refresh()
-                self.setBannerOutOfPage()
-                self.loadFrames()
-                initial_time = datetime.now()
+            time.sleep(refresh_timer_seconds)
+            logger.info('Dummie interact...')
+            self.driver.find_element(By.XPATH, '/html/body/div[4]/div/div/div[2]/div[1]/div/div/div/div/div[2]').click()
 
     def makeBetHandler(self, color: str, path: str, value: int):
         try:

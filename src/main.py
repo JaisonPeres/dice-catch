@@ -49,9 +49,13 @@ def stop_command(message: dict):
     date = message['date'] if 'date' in message else ''
     if checkMessageOld(date):
         return
-    notify('Webdrive stopped')
-    logger.warning('Webdrive stopped')
-    seg.stop()
+    if (seg.isStarted()):
+        notify('Webdrive stopped')
+        logger.warning('Webdrive stopped')
+        seg.stop()
+    else:
+        notify('Webdrive not started')
+        logger.warning('Webdrive not started')
 
 @app.route('/refresh')
 def refresh_command(message: dict):
