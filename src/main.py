@@ -25,7 +25,7 @@ results = {
 telegram_api_key = os.environ['TELEGRAM_API_KEY']
 telegram_notify_list = os.environ['TELEGRAM_NOTIFY_LIST']
 notify_list = telegram_notify_list.split(',')
-value_to_bet = 5
+value_to_bet = 5.0
 timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
 count_results_file = f'./log-count-results-{timestamp}.csv'
 init_date = datetime.now()
@@ -40,7 +40,7 @@ def start_command(message: dict):
     if checkMessageOld(date):
         return
     logger.warning('Webdrive is starting...')
-    notify('Webdrive is starting...')
+    notify('Carregando jogo...')
     seg.init(IS_SANDBOX)
     amount = seg.getAmountFloat()
     notify_init_bot(amount)
@@ -51,13 +51,13 @@ def stop_command(message: dict):
     if checkMessageOld(date):
         return
     if (seg.isStarted()):
-        notify('Webdrive is stopping...')
+        notify('Encerrando jogo...')
         logger.warning('Webdrive is stopping...')
         seg.stop()
         logger.warning('Webdrive stopped')
-        notify('Webdrive stopped')
+        notify('Jogo encerrado')
     else:
-        notify('Webdrive not started')
+        notify('Jogo não iniciado')
         logger.warning('Webdrive not started')
 
 @app.route('/refresh')
@@ -65,7 +65,7 @@ def refresh_command(message: dict):
     date = message['date'] if 'date' in message else ''
     if checkMessageOld(date):
         return
-    notify('Webdrive refreshing...')
+    notify('Atualizando o jogo...')
     logger.warning('Webdrive refreshing...')
     seg.refresh()
 
@@ -74,7 +74,7 @@ def refresh_command(message: dict):
     date = message['date'] if 'date' in message else ''
     if checkMessageOld(date):
         return
-    notify('Webdrive restarting...')
+    notify('Reiniciando o jogo...')
     logger.warning('Webdrive restarting...')
     seg.stop()
     seg.init(IS_SANDBOX)
@@ -86,12 +86,12 @@ def help_command(message: dict):
         return
     message = [
         'BOT HELPER\n\n',
-        '/help - Show this message\n',
-        '/start - Start the webdrive\n',
-        '/stop - Stop the webdrive\n',
-        '/refresh - Refresh the webdrive\n',
-        '/restart - Restart the webdrive\n',
-        '/amount - Show the amount\n',
+        '/help - Exibe comandos\n',
+        '/start - Inicia o jogo\n',
+        '/stop - Encerra o jogo\n',
+        '/refresh - Atualiza o jogo\n',
+        '/restart - Reinicia o jogo\n',
+        '/amount - Exibe o saldo da banca\n',
     ]
 
     notify(''.join(message))
@@ -103,7 +103,7 @@ def help_command(message: dict):
         return
     amout = seg.getAmount()
 
-    notify(f'💵 Amount: {amout}')
+    notify(f'💵 Saldo: {amout}')
 
 # PROCESS TELEGRAM MESSAGE
 @app.route('(?!/).+')
@@ -140,18 +140,21 @@ def processMessage(message: str, base_log: dict):
     #         break
 
 def processSignal(signal: str, base_log: dict):
-    signal_file = CsvFile(f'./log-result-{timestamp}.csv')
+    signal_file = CsvFile(f'./log-signal-{timestamp}.csv')
     logger.info(f'Received signal: {signal}')
-    notify(f'Making bet on {signal} with value {value_to_bet}')
+    icon = '🔴' if signal == 'banker' else '🔵'
+    notify(f'✨ Fazendo aposta em {icon} {signal} com o valor {floatToCurrency(value_to_bet)} ...')
     result = seg.bet(signal, value_to_bet)
-    processResult(result, base_log)
-    # notify(f'Result: ```{result}```')
-    # result = str(result).replace(',', '-').replace('[', '').replace(']', '').replace(' ', '').replace("'", "")
+    if result == None:
+        notify('❌ Erro ao fazer aposta')
+        signal_file.add_row({**base_log, 'error': 'Erro ao fazer aposta'})
+        return
+    processResult(signal, result)
     signal_file.add_row({**base_log})
     logger.info(f'Result: {result}')
     pass
 
-def processResult(result: dict, base_log: dict):
+def processResult(signal: str, result: dict):
     winner = result['winner']
     if winner == 'banker':
         winner = '🔴 Banker'
@@ -162,18 +165,29 @@ def processResult(result: dict, base_log: dict):
     result_green = 'green' in result and type(result['green']) == bool and result['green'] == True or False
     result_green = '✅ Green' if result_green else '❌ Red'
     result_amount = result['amount']
+    red_counter = result['red_counter']
+    green_counter = result['green_counter']
+    tie_counter = result['tie_counter']
+    result_label = '⚠️ Empate' if winner == '🟡 Tie' else result_green
     message = [
-        f'{result_green}\n',
-        f'Amount: R$ {result_amount}\n',
-        f'Winner: {winner}'
+        f'{result_label}\n',
+        f'Resultado: {winner}\n',
+        f'Saldo: {floatToCurrency(result_amount)}\n',
+        'Placar\n',
+        f'✅ Greens: {green_counter}\n',
+        f'❌ Reds: {red_counter}\n',
+        f'⚠️ Empates: {tie_counter}\n'
     ]
     notify(''.join(message))
     result_file = CsvFile(f'./log-result-{timestamp}.csv')
     result_file.add_row({
-        **base_log,
         'result': result_green,
+        'signal': signal,
         'amount': result_amount,
-        'winner': winner
+        'winner': winner,
+        'red_counter': red_counter,
+        'green_counter': green_counter,
+        'tie_counter': tie_counter
     })
     # countResult(result)
     pass
@@ -238,6 +252,12 @@ def checkMessageOld(date: int):
     date = datetime.fromtimestamp(date)
     return date < init_date
 
+def floatToCurrency(value: float):
+    a = '{:,.2f}'.format(value)
+    b = a.replace(',','v')
+    c = b.replace('.',',')
+    return f'R$ {c}'.replace('v','.')
+
 def notify(message: str):
     for notify in notify_list:
         app.send_message(notify, message)
@@ -248,14 +268,14 @@ def exit_handler():
 
 def notify_init_bot(amount: float):
     message = [
-        '🚨 WEBDRIVER STARTED 🚨\n',
-        f'Mode: {"DEMO" if IS_SANDBOX else "REAL"}\n',
-        f'Starting at: {init_date_str}\n',
-        f'Bet Value: R$ {value_to_bet}\n',
-        f'Amount: R$ {amount}\n'
+        '🚨 Jogo Iniciado 🚨\n',
+        f'Modo: {"DEMO" if IS_SANDBOX else "REAL"}\n',
+        f'Iniciou às: {init_date_str}\n',
+        f'Valor por aposta: {floatToCurrency(value_to_bet)}\n',
+        f'Saldo: {floatToCurrency(amount)}\n'
     ]
     notify(''.join(message))
-    notify('Waiting for signals...')
+    notify('Aguardando sinais...')
 
 if __name__ == '__main__':
     user_input = input("Init bot with DEMO MODE enabled? (y/n): ")
@@ -271,6 +291,6 @@ if __name__ == '__main__':
     logger.success('Bot listening')
     logger.success('Waiting for /start command')
     app.config['api_key'] = telegram_api_key
-    notify('Bot started')
-    notify(' /start to start the webdriver')
+    notify('Bot iniciado')
+    notify(' /start para iniciar o jogo')
     app.poll(debug=True)

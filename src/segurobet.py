@@ -56,6 +56,9 @@ class Segurobet:
     def __init__(self):
         self.sandbox = True
         self.initial_amount = 0.0
+        self.red_counter = 0
+        self.green_counter = 0
+        self.tie_counter = 0
         pass
 
     def getWinnerResult(self):
@@ -207,13 +210,16 @@ class Segurobet:
                         logger.info(f'Making bet on {color} with value {value}')
                         color_bet_button.click()
                         time.sleep(2)
+                        return True
                         break
                 else:
                     logger.warning(f'Cannot make bet on {color} with value {value}')
                     max_attempts -= 1
                     time.sleep(1)
+                    return False
         except NoSuchElementException as error:
             logger.error(f'error making bet {color}', error.msg)
+            return False
             pass
     
     def currencyStringToFloat(self, currency: str) -> float:
@@ -262,29 +268,52 @@ class Segurobet:
             return
         if res_result == result_key:
             logger.info(f'✅ GREEN: {res_result}')
+            self.green_counter += 1
             return {
                 'winner': res_result,
                 'green': True,
-                'amount': amount
+                'amount': amount,
+                'green_counter': self.green_counter,
+                'red_counter': self.red_counter,
+                'tie_counter': self.tie_counter
             }
+        
+        if res_result == TIE:
+            logger.info(f'🟨 TIE: {res_result}')
+            self.tie_counter += 1
+            return {
+                'winner': res_result,
+                'green': False,
+                'amount': amount,
+                'green_counter': self.green_counter,
+                'red_counter': self.red_counter,
+                'tie_counter': self.tie_counter
+            }
+
         logger.info(f'❌ RED: {res_result}')
+        self.red_counter += 1
         return {
             'winner': res_result,
             'green': False,
-            'amount': amount
+            'amount': amount,
+            'green_counter': self.green_counter,
+            'red_counter': self.red_counter,
+            'tie_counter': self.tie_counter
         }
     
-    def bet(self, req_result: str, value: int) -> dict:
+    def bet(self, req_result: str, value: int):
         self.checkAmount()
         if not self.frames_loaded:
             self.updateResults()
     
+        success = False
         if req_result == PLAYER:
-            self.makeBetHandler(PLAYER, PLAYER_BET_XPATH, value)
+            success = self.makeBetHandler(PLAYER, PLAYER_BET_XPATH, value)
 
         if req_result == BANKER:
-            self.makeBetHandler(BANKER, BANKER_BET_XPATH, value)
-
+            success = self.makeBetHandler(BANKER, BANKER_BET_XPATH, value)
+        if not success:
+            return
         return self.processResult(req_result)
 
         # res_result = self.getWinnerResult()
