@@ -261,13 +261,13 @@ class Segurobet:
         if res_result is None:
             return
         if res_result == result_key:
-            logger.success(f'✅ GREEN: {res_result}')
+            logger.info(f'✅ GREEN: {res_result}')
             return {
                 'winner': res_result,
                 'green': True,
                 'amount': amount
             }
-        logger.error(f'❌ RED: {res_result}')
+        logger.info(f'❌ RED: {res_result}')
         return {
             'winner': res_result,
             'green': False,
