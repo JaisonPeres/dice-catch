@@ -22,14 +22,18 @@ INACTIVITY_MESSAGE_PATH = 'div[data-role="inactivity-message-clickable"]'
 PRIVACY_OPT_IN_BUTTON_PATH = '/html/body/div[5]/div/div[2]/button[3]'
 BANNER_PATH = '/html/body/div[1]/div/div/div'
 BANNER_CLOSE_BUTTON_PATH = '/html/body/div[1]/div/div/div/div[3]/button'
-BLUE_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[1]/div[3]'
-RED_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[3]/div[3]'
+PLAYER_BET_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[1]/div[3]'
+BANKER_BET_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[3]/div[3]'
 AMOUNT_XPATH = '/html/body/div[4]/div/div/div[2]/div[9]/div[3]/div/div/div[1]/div/span[2]/span'
+WINNER_XPATH = '/html/body/div[4]/div/div/div[2]/div[8]/div[1]/div/div/div'
+BANKER_WINS_DATA_ROLE = 'game-result-banker-wins'
+PLAYER_WINS_DATA_ROLE = 'game-result-player-wins'
+TIE_WINS_DATA_ROLE = 'game-result-tie-wins'
 
-# CONFIRM_BLUE_BET_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[1]/div[5]'
-# CONFIRM_RED_BET_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[3]/div[5]'
 
 COUNTDOWN_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[1]/div'
+
+# self.drver.get_e
 
 segurobet_catch_url = os.environ['SEGUROBET_CATCH_URL']
 segurobet_catch_username = os.environ['SEGUROBET_CATCH_USERNAME']
@@ -38,8 +42,9 @@ segurobet_catch_password = os.environ['SEGUROBET_CATCH_PASSWORD']
 env_minutes = os.environ.get('REFRESH_TIMER_MINUTES')
 refresh_timer_seconds = 60 * int(env_minutes) if env_minutes is not None else 5 * 60
 
-RED_COLOR = 'red'
-BLUE_COLOR = 'blue'
+BANKER = 'banker'
+PLAYER = 'player'
+TIE = 'tie'
 
 min_amount_keep = 10.00
 stop_loss = 10.00
@@ -52,6 +57,22 @@ class Segurobet:
         self.sandbox = True
         self.initial_amount = 0.0
         pass
+
+    def getWinnerResult(self):
+        try:
+            wait = WebDriverWait(self.driver, 60)
+            winner = wait.until(EC.presence_of_element_located((By.XPATH, WINNER_XPATH)))
+            winner_data_role = winner.get_attribute('data-role')
+            if winner_data_role == BANKER_WINS_DATA_ROLE:
+                return BANKER
+            if winner_data_role == PLAYER_WINS_DATA_ROLE:
+                return PLAYER
+            if winner_data_role == TIE_WINS_DATA_ROLE:
+                return TIE
+            return None
+        except NoSuchElementException as error:
+            logger.error('error getting winner result', error.msg)
+            return None
 
     def stop(self):
         self.driver.quit()
@@ -233,18 +254,57 @@ class Segurobet:
             logger.error('error checking amount', error)
             return False
     
-    def bet(self, color: str, value: int) -> list:
+    def processResult(self, result_key: str):
+        res_result = self.getWinnerResult()
+        time.sleep(4)
+        amount = self.currencyStringToFloat(self.getAmount())
+        if res_result is None:
+            return
+        if res_result == result_key:
+            logger.success(f'✅ GREEN: {res_result}')
+            return {
+                'winner': res_result,
+                'green': True,
+                'amount': amount
+            }
+        logger.error(f'❌ RED: {res_result}')
+        return {
+            'winner': res_result,
+            'green': False,
+            'amount': amount
+        }
+    
+    def bet(self, req_result: str, value: int) -> dict:
         self.checkAmount()
         if not self.frames_loaded:
             self.updateResults()
     
-        if color == BLUE_COLOR:
-            self.makeBetHandler(color, BLUE_XPATH, value)
+        if req_result == PLAYER:
+            self.makeBetHandler(PLAYER, PLAYER_BET_XPATH, value)
 
-        if color == RED_COLOR:
-            self.makeBetHandler(color, RED_XPATH, value)
+        if req_result == BANKER:
+            self.makeBetHandler(BANKER, BANKER_BET_XPATH, value)
 
-        return self.updateResults()
+        return self.processResult(req_result)
+
+        # res_result = self.getWinnerResult()
+        # if res_result is None:
+        #     return
+        # if res_result == req_result:
+        #     logger.success(f'✅ GREEN: {res_result}')
+        #     return {
+        #         'result': res_result,
+        #         'green': True,
+        #         'amount': self.getAmount()
+        #     }
+        # logger.error(f'❌ RED: {res_result}')
+        # return {
+        #     'result': res_result,
+        #     'green': False,
+        #     'amount': self.getAmount()
+        # }
+        # logger.success(f'Winner >>>>>> : {res_result}')
+        # return self.updateResults()
 
     def updateResults(self) -> list:
         try:
@@ -264,9 +324,18 @@ class Segurobet:
 
     def getAmount(self) -> str:
         try:
-            return self.driver.find_element(By.XPATH, AMOUNT_XPATH).text
+            wait = WebDriverWait(self.driver, 60)
+            amount = wait.until(EC.presence_of_element_located((By.XPATH, AMOUNT_XPATH)))
+            return amount.text
         except Exception as error:
             logger.error('error getting amount', error)
+            pass
+
+    def getAmountFloat(self) -> float:
+        try:
+            return self.currencyStringToFloat(self.getAmount())
+        except Exception as error:
+            logger.error('error getting amount float', error)
             pass
 
     def login(self):

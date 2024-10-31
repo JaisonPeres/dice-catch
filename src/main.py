@@ -13,8 +13,8 @@ app = TeleBot(__name__)
 logger = Logger('Bot')
 
 signals = {
-    '🔴': 'red',
-    '🔵': 'blue',
+    '🔴': 'banker',
+    '🔵': 'player',
 }
 
 results = {
@@ -39,10 +39,11 @@ def start_command(message: dict):
     date = message['date'] if 'date' in message else ''
     if checkMessageOld(date):
         return
-    logger.warning('Webdrive started')
-    notify('Webdrive started')
-    notify_init_bot()
+    logger.warning('Webdrive is starting...')
+    notify('Webdrive is starting...')
     seg.init(IS_SANDBOX)
+    amount = seg.getAmountFloat()
+    notify_init_bot(amount)
 
 @app.route('/stop')
 def stop_command(message: dict):
@@ -50,9 +51,11 @@ def stop_command(message: dict):
     if checkMessageOld(date):
         return
     if (seg.isStarted()):
-        notify('Webdrive stopped')
-        logger.warning('Webdrive stopped')
+        notify('Webdrive is stopping...')
+        logger.warning('Webdrive is stopping...')
         seg.stop()
+        logger.warning('Webdrive stopped')
+        notify('Webdrive stopped')
     else:
         notify('Webdrive not started')
         logger.warning('Webdrive not started')
@@ -119,7 +122,7 @@ def receive(message: dict):
         'chat_title': chat_title,
         'chat_id': chat_from,
         'message': user_msg,
-        'date': parseDate(date),
+        'date': parseDate(date)
     }
     
     processMessage(user_msg, base_log)
@@ -130,25 +133,49 @@ def processMessage(message: str, base_log: dict):
             base_log['signal'] = signal_key
             processSignal(signal_key, base_log)
             break
-    for result_msg, result_key in results.items():
-        if result_msg in message:
-            base_log['result'] = result_key
-            processResult(result_key, base_log)
-            break
+    # for result_msg, result_key in results.items():
+    #     if result_msg in message:
+    #         base_log['result'] = result_key
+    #         processResult(result_key, base_log)
+    #         break
 
 def processSignal(signal: str, base_log: dict):
-    signal_file = CsvFile(f'./log-signal-{timestamp}.csv')
+    signal_file = CsvFile(f'./log-result-{timestamp}.csv')
     logger.info(f'Received signal: {signal}')
     notify(f'Making bet on {signal} with value {value_to_bet}')
     result = seg.bet(signal, value_to_bet)
-    result = str(result).replace(',', '-').replace('[', '').replace(']', '').replace(' ', '').replace("'", "")
-    signal_file.add_row({**base_log, result: result})
+    processResult(result, base_log)
+    # notify(f'Result: ```{result}```')
+    # result = str(result).replace(',', '-').replace('[', '').replace(']', '').replace(' ', '').replace("'", "")
+    signal_file.add_row({**base_log})
+    logger.info(f'Result: {result}')
     pass
 
-def processResult(result: str, base_log: dict):
+def processResult(result: dict, base_log: dict):
+    winner = result['winner']
+    if winner == 'banker':
+        winner = '🔴 Banker'
+    elif winner == 'player':
+        winner = '🔵 Player'
+    elif winner == 'tie':
+        winner = '🟡 Tie'
+    result_green = 'green' in result and type(result['green']) == bool and result['green'] == True or False
+    result_green = '✅ Green' if result_green else '❌ Red'
+    result_amount = result['amount']
+    message = [
+        f'{result_green}\n',
+        f'Amount: R$ {result_amount}\n',
+        f'Winner: {winner}'
+    ]
+    notify(''.join(message))
     result_file = CsvFile(f'./log-result-{timestamp}.csv')
-    result_file.add_row({**base_log})
-    countResult(result)
+    result_file.add_row({
+        **base_log,
+        'result': result_green,
+        'amount': result_amount,
+        'winner': winner
+    })
+    # countResult(result)
     pass
 
 def countResult(result_key: str):
@@ -219,15 +246,16 @@ def exit_handler():
     logger.warning('Exiting...')
     sys.exit(0)
 
-def notify_init_bot():
+def notify_init_bot(amount: float):
     message = [
         '🚨 WEBDRIVER STARTED 🚨\n',
-        f'🕹️ Mode: {"DEMO" if IS_SANDBOX else "REAL"}\n',
-        f'📅 Starting at: {init_date_str}\n',
-        f'💵 Value: {value_to_bet}\n',
-        '⏱️ Waiting for signals and results...'
+        f'Mode: {"DEMO" if IS_SANDBOX else "REAL"}\n',
+        f'Starting at: {init_date_str}\n',
+        f'Bet Value: R$ {value_to_bet}\n',
+        f'Amount: R$ {amount}\n'
     ]
     notify(''.join(message))
+    notify('Waiting for signals...')
 
 if __name__ == '__main__':
     user_input = input("Init bot with DEMO MODE enabled? (y/n): ")
