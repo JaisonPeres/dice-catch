@@ -12,14 +12,13 @@ import re
 
 logger = Logger('Webdriver')
 
-CASINO_IFRAME_PATH = 'x-casinoGameSingleViewIframe__iframe'
-CASINO_IFRAME_ACTIVE_PATH = 'x-casinoGameSingleViewIframe__iframe--active'
-IFRAME_1_PATH = '/html/body/div[8]/div[1]/div/div/div/div/div/div/div/div[2]/div[2]/div/iframe'
-IFRAME_2_PATH = '/html/body/div[2]/div/div[1]/div/iframe'
-IFRAME_3_PATH = '/html/body/div[5]/div[2]/iframe'
+IFRAME_1_CLASS = 'x-casinoGameSingleViewIframe__iframe'
+IFRAME_1_XPATH = '/html/body/div[6]/div[1]/div/div/div/div/div/div/div/div[2]/div[2]/div/iframe'
+IFRAME_2_XPATH = '/html/body/div[2]/div/div[1]/div/iframe'
+IFRAME_3_XPATH = '/html/body/div[5]/div[2]/iframe'
 RESULTS_PATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[1]/div/div/div'
 INACTIVITY_MESSAGE_PATH = 'div[data-role="inactivity-message-clickable"]'
-PRIVACY_OPT_IN_BUTTON_PATH = '/html/body/div[5]/div/div[2]/button[3]'
+PRIVACY_OPT_IN_BUTTON_PATH = '/html/body/div[4]/div/div[2]/button[3]'
 BANNER_PATH = '/html/body/div[1]/div/div/div'
 BANNER_CLOSE_BUTTON_PATH = '/html/body/div[1]/div/div/div/div[3]/button'
 PLAYER_BET_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[3]/div/div/div/div/div/div[1]/div[3]'
@@ -59,6 +58,8 @@ class Segurobet:
         self.red_counter = 0
         self.green_counter = 0
         self.tie_counter = 0
+        self.load_frames_attempts = 0
+        self.max_load_frames_attempts = 5
         pass
 
     def getWinnerResult(self):
@@ -111,23 +112,6 @@ class Segurobet:
             logger.error('error setting banner out of page', error.msg)
             pass
 
-    def switchToCasinoIframe(self):
-        try:
-            iframe_names = [
-                CASINO_IFRAME_PATH,
-                CASINO_IFRAME_ACTIVE_PATH
-            ]
-            for iframe_name in iframe_names:
-                try:
-                    iframe = self.driver.find_element(By.CLASS_NAME, iframe_name)
-                    self.driver.switch_to.frame(iframe)
-                    return True
-                except:
-                    pass
-        except Exception as error:
-            logger.error(f'error switching to casino iframe', error)
-            pass
-
     def switchToIframe(self, iframe_xpath: str, open: bool = False):
         logger.info(f'switching to iframe {iframe_xpath}...')
         try:
@@ -140,11 +124,25 @@ class Segurobet:
             self.driver.switch_to.frame(iframe)
         except Exception as error:
             logger.error(f'error switching to iframe', error)
-            pass
+            raise error
+    
+    def switchToIframeCss(self, iframe_class: str, open: bool = False):
+        logger.info(f'switching to iframe class {iframe_class}...')
+        try:
+            iframe = self.driver.find_element(By.CLASS_NAME, iframe_class)
+            if open:
+                iframeSrc = iframe.get_attribute('src')
+                logger.info(f'opening iframe url {iframeSrc}')
+                self.driver.get(iframeSrc)
+                return
+            self.driver.switch_to.frame(iframe)
+        except Exception as error:
+            logger.error(f'error switching to iframe class', error)
+            raise error
 
     def refresh(self):
         self.driver.refresh()
-        self.switchToIframe(IFRAME_3_PATH)
+        self.switchToIframe(IFRAME_3_XPATH)
         pass
     
     def closeBanner(self):
@@ -168,19 +166,25 @@ class Segurobet:
             pass
 
     def loadFrames(self):
+        if self.load_frames_attempts >= self.max_load_frames_attempts:
+            logger.error('max load frames attempts reached')
+            return
         try:
             logger.info('loading game frames...')
             if not self.logged_session:
                 self.login()
-            handles_window = self.driver.window_handles[0]
-            self.driver.switch_to.window(handles_window)
-            self.switchToIframe(IFRAME_1_PATH)
-            self.switchToIframe(IFRAME_2_PATH)
-            self.switchToIframe(IFRAME_3_PATH, True)
-            self.switchToIframe(IFRAME_3_PATH)
+            # handles_window = self.driver.window_handles[0]
+            # self.driver.switch_to.window(handles_window)
+            self.switchToIframeCss(IFRAME_1_CLASS)
+            self.switchToIframe(IFRAME_2_XPATH)
+            self.switchToIframe(IFRAME_3_XPATH, True)
+            self.switchToIframe(IFRAME_3_XPATH)
             self.frames_loaded = True
             logger.success('game frames loaded!')
         except Exception as error:
+            self.load_frames_attempts += 1
+            time.sleep(5)
+            self.loadFrames()
             logger.error('error loading game frames', error)
             pass
 
@@ -207,19 +211,16 @@ class Segurobet:
                 if self.canBet():
                     color_bet_button = self.driver.find_element(By.XPATH, path)
                     if color_bet_button is not None and color_bet_button.is_displayed() and color_bet_button.is_enabled():
-                        logger.info(f'Making bet on {color} with value {value}')
+                        logger.info(f'[{max_attempts}] Making bet on {color} with value {value}')
                         color_bet_button.click()
                         time.sleep(2)
-                        return True
                         break
                 else:
                     logger.warning(f'Cannot make bet on {color} with value {value}')
                     max_attempts -= 1
                     time.sleep(1)
-                    return False
         except NoSuchElementException as error:
             logger.error(f'error making bet {color}', error.msg)
-            return False
             pass
     
     def currencyStringToFloat(self, currency: str) -> float:
@@ -306,14 +307,12 @@ class Segurobet:
         if not self.frames_loaded:
             self.updateResults()
     
-        success = False
         if req_result == PLAYER:
-            success = self.makeBetHandler(PLAYER, PLAYER_BET_XPATH, value)
+            self.makeBetHandler(PLAYER, PLAYER_BET_XPATH, value)
 
         if req_result == BANKER:
-            success = self.makeBetHandler(BANKER, BANKER_BET_XPATH, value)
-        if not success:
-            return
+            self.makeBetHandler(BANKER, BANKER_BET_XPATH, value)
+
         return self.processResult(req_result)
 
         # res_result = self.getWinnerResult()

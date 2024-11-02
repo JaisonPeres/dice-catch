@@ -292,5 +292,5 @@ if __name__ == '__main__':
     logger.success('Waiting for /start command')
     app.config['api_key'] = telegram_api_key
     notify('Bot iniciado')
-    notify(' /start para iniciar o jogo')
+    notify('/start para iniciar o jogo')
     app.poll(debug=True)
