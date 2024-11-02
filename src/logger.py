@@ -20,7 +20,7 @@ class Logger:
     def info(self, message: str):
         print(f'{bcolors.OKCYAN}INFO.....: {bcolors.HEADER}[{self.context}] {bcolors.ENDC}{message}{bcolors.ENDC}')
 
-    def error(self, message: str, details):
+    def error(self, message: str, details: any = None):
         print(f'{bcolors.FAIL}ERROR....: {bcolors.HEADER}[{self.context}] {bcolors.ENDC}{message}{bcolors.ENDC}', details)
 
     def warning(self, message: str):
