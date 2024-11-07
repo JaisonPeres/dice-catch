@@ -9,6 +9,8 @@ import os
 import threading
 from logger import Logger
 import re
+import schedule
+from datetime import datetime
 
 logger = Logger('Webdriver')
 
@@ -60,6 +62,7 @@ class Segurobet:
         self.tie_counter = 0
         self.load_frames_attempts = 0
         self.max_load_frames_attempts = 5
+        self.started_at = None
         pass
 
     def getWinnerResult(self):
@@ -84,21 +87,24 @@ class Segurobet:
 
     def isStarted(self):
         return self.driver is not None
+    
+    def startedAt(self):
+        return self.started_at
 
     def init(self, sandbox: bool):
         self.sandbox = sandbox
-        self.driver = Driver(uc=True, headless=False)
-        # self.driver.maximize_window()
+        self.driver = Driver(uc=True, headless=False, pls="normal", chromium_arg="--no-sandbox,--mute-audio")
         self.driver.get(segurobet_catch_url)
         self.logged_session = False
         self.frames_loaded = False
         self.login()
         self.setBannerOutOfPage()
         loadFramesThread = threading.Thread(name='loadFramesThread', target=self.loadFrames)
-        refreshFramesThread = threading.Thread(name='refreshFramesThread', target=self.refreshFrames)
+        schedule.every(5).minutes.do(self.refreshFrames)
+        schedule.every(29).minutes.do(self.init)
         loadFramesThread.start()
-        refreshFramesThread.start()
         self.updateResults()
+        self.started_at = datetime.now()
         pass
     
     def setBannerOutOfPage(self):
@@ -197,6 +203,10 @@ class Segurobet:
     
     def canBet(self) -> bool:
         try:
+            amount = self.getAmountFloat()
+            if amount < 5.0:
+                logger.warning(f'Cannot bet with amount {amount}')
+                return False
             countdown = self.driver.find_element(By.XPATH, COUNTDOWN_XPATH)
             if countdown is not None and countdown.is_displayed() and countdown.is_enabled():
                 return True

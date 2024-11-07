@@ -140,6 +140,11 @@ def processMessage(message: str, base_log: dict):
     #         break
 
 def processSignal(signal: str, base_log: dict):
+
+    if not seg.startedAt():
+        notify('Jogo não iniciado')
+        return
+
     signal_file = CsvFile(f'./log-signal-{timestamp}.csv')
     logger.info(f'Received signal: {signal}')
     icon = '🔴' if signal == 'banker' else '🔵'

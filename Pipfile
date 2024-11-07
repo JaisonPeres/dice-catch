@@ -12,6 +12,7 @@ pandas = "*"
 pyfiglet = "*"
 rich = "*"
 pytelegrambotapi = "*"
+schedule = "*"
 
 [dev-packages]
 
