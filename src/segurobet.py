@@ -94,6 +94,10 @@ class Segurobet:
 
     def init(self, sandbox: bool):
         self.sandbox = sandbox
+        if (headless):
+            logger.warning('Running in headless mode')
+        else:
+            logger.warning('Running in normal mode')
         self.driver = Driver(uc=True, headless=headless, pls="normal", chromium_arg="--no-sandbox,--mute-audio")
         self.driver.get(segurobet_catch_url)
         self.logged_session = False
