@@ -39,6 +39,7 @@ COUNTDOWN_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[1]/div
 segurobet_catch_url = os.environ['SEGUROBET_CATCH_URL']
 segurobet_catch_username = os.environ['SEGUROBET_CATCH_USERNAME']
 segurobet_catch_password = os.environ['SEGUROBET_CATCH_PASSWORD']
+headless = os.environ.get('HEADLESS') == 'true'
 
 env_minutes = os.environ.get('REFRESH_TIMER_MINUTES')
 refresh_timer_seconds = 60 * int(env_minutes) if env_minutes is not None else 5 * 60
@@ -93,7 +94,7 @@ class Segurobet:
 
     def init(self, sandbox: bool):
         self.sandbox = sandbox
-        self.driver = Driver(uc=True, headless=False, pls="normal", chromium_arg="--no-sandbox,--mute-audio")
+        self.driver = Driver(uc=True, headless=headless, pls="normal", chromium_arg="--no-sandbox,--mute-audio")
         self.driver.get(segurobet_catch_url)
         self.logged_session = False
         self.frames_loaded = False
