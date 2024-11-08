@@ -9,7 +9,6 @@ import os
 import threading
 from logger import Logger
 import re
-import schedule
 from datetime import datetime
 
 logger = Logger('Webdriver')
@@ -30,19 +29,17 @@ WINNER_XPATH = '/html/body/div[4]/div/div/div[2]/div[8]/div[1]/div/div/div'
 BANKER_WINS_DATA_ROLE = 'game-result-banker-wins'
 PLAYER_WINS_DATA_ROLE = 'game-result-player-wins'
 TIE_WINS_DATA_ROLE = 'game-result-tie-wins'
-
-
 COUNTDOWN_XPATH = '/html/body/div[4]/div/div/div[2]/div[6]/div/div[3]/div[1]/div'
-
-# self.drver.get_e
 
 segurobet_catch_url = os.environ['SEGUROBET_CATCH_URL']
 segurobet_catch_username = os.environ['SEGUROBET_CATCH_USERNAME']
 segurobet_catch_password = os.environ['SEGUROBET_CATCH_PASSWORD']
 headless = os.environ.get('HEADLESS') == 'true'
 
-env_minutes = os.environ.get('REFRESH_TIMER_MINUTES')
-refresh_timer_seconds = 60 * int(env_minutes) if env_minutes is not None else 5 * 60
+env_refresh_minutes = os.environ.get('REFRESH_TIMER_MINUTES')
+env_restart_minutes = os.environ.get('RESTART_TIMER_MINUTES')
+refresh_timer_seconds = 60 * int(env_refresh_minutes) if env_refresh_minutes is not None else 5 * 60
+restart_timer_seconds = 60 * int(env_restart_minutes) if env_restart_minutes is not None else 24 * 60
 
 BANKER = 'banker'
 PLAYER = 'player'
@@ -105,9 +102,11 @@ class Segurobet:
         self.login()
         self.setBannerOutOfPage()
         loadFramesThread = threading.Thread(name='loadFramesThread', target=self.loadFrames)
-        schedule.every(5).minutes.do(self.refreshFrames)
-        schedule.every(29).minutes.do(self.init)
+        refreshFramesThread = threading.Thread(name='refreshFramesThread', target=self.scheduleRefresh)
+        restartThread = threading.Thread(name='restartThread', target=self.scheduleRestart)
         loadFramesThread.start()
+        refreshFramesThread.start()
+        restartThread.start()
         self.updateResults()
         self.started_at = datetime.now()
         pass
@@ -155,6 +154,11 @@ class Segurobet:
         self.driver.refresh()
         self.switchToIframe(IFRAME_3_XPATH)
         pass
+
+    def restart(self):
+        self.stop()
+        self.init(self.sandbox)
+        pass
     
     def closeBanner(self):
         logger.info('closing banner...')
@@ -199,12 +203,19 @@ class Segurobet:
             logger.error('error loading game frames', error)
             pass
 
-    def refreshFrames(self):
-        logger.info(f'Refresh frames every {refresh_timer_seconds / 60} minutes')
+    def scheduleRefresh(self):
+        logger.info(f'Schedule refresh on {refresh_timer_seconds / 60} minutes')
         while True:
             time.sleep(refresh_timer_seconds)
             logger.info('Refreshing...')
             self.refresh()
+    
+    def scheduleRestart(self):
+        logger.info(f'Schedule restart on {restart_timer_seconds / 60} minutes')
+        while True:
+            time.sleep(restart_timer_seconds)
+            logger.info('Restarting...')
+            self.restart()
     
     def canBet(self) -> bool:
         try:
